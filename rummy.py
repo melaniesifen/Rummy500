@@ -435,12 +435,4 @@ def main():
     game.play_to_win()
 
 main()
-# BUG: To reproduce, have player try to pick mutlple cards from table and the first card is not needed.
-# TODO: Add point cards to point cards already on table.
-# This might be better done but putting cards on table as a list of lists
-# TODO: Add point cards to other people's points
-# TODO: Add rounds and points
 
-# Add graphics
-# Add computer
-# Make computer smarter
