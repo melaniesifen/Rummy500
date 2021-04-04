@@ -46,31 +46,3 @@ class Card(object):
 
     def __ge__(self, other):
         return self.rank >= other.rank
-
-
-class Deck(object):
-    # constructor
-    def __init__(self, num_decks = 1):
-        self.deck = []
-        for i in range(num_decks):
-            for suit in Card.SUITS:
-                for rank in Card.RANKS:
-                    card = Card(rank, suit)
-                    self.deck.append(card)
-
-    # shuffle the deck
-    def shuffle(self):
-        random.shuffle(self.deck)
-
-    # deal a card
-    def deal(self):
-        if (len(self.deck) == 0):
-            return None
-        else:
-            return self.deck.pop(0)
-        
-    def __len__(self):
-        count = 0
-        for card in self.deck:
-            count += 1
-        return count
