@@ -13,6 +13,7 @@ class Rummy(object):
         self.num_players = num_players
         self.num_cards_in_hand = 10
         self.players = []
+        self.all_tabled_cards = []
         
         # add players to game
         for i in range(self.num_players):
@@ -40,7 +41,13 @@ class Rummy(object):
         # show first card of the deck  
         self.table = Table(self.deck, [])
             
-        
+    def get_all_tabled_cards(self):
+        return self.all_tabled_cards
+    
+    def set_all_tabled_cards(self):
+        for player in self.players:
+            self.all_tabled_cards.append(player.cards_on_table)
+                
     def pickup(self, player):
         
         is_valid_pick = False
@@ -153,6 +160,7 @@ class Rummy(object):
                     new_card = Card(rank = 10, suit = new_card[2])
                 else:
                     new_card = Card(rank = int(new_card[0]), suit = new_card[1])
+                    
             # take cards off the table
             old_cards = self.table.cards_on_table[:]
             new_cards = self.table.pickup_cards_on_table(new_card)
@@ -166,32 +174,42 @@ class Rummy(object):
             player.cards_in_hand = sort_subset(player.cards_in_hand, player.method)            
         
             # check every combination of cards in the player's hand
-            ## check every combination of cards on the table
             potential_hand = player.cards_in_hand
             if len(new_cards) == 1:
                 is_valid_pick = True
                 player.cards_in_hand = potential_hand
                 player.sort_by(player.cards_in_hand, player.method)
                 return (is_valid_pick, must_put_down_points)
-            if len(new_cards) > 1:
-                for L in range(0, len(potential_hand) + 1):
-                    for subset_hand in itertools.combinations(potential_hand, L):
-                        if first_card in subset_hand:
-                            if is_valid(subset_hand):
-                                is_valid_pick = True
-                                break
-                if not is_valid_pick: 
-                    # put cards back on table
-                    self.table.cards_on_table = old_cards
-                    # remove cards from hand
-                    player.cards_in_hand = old_hand        
-                    return (is_valid_pick, must_put_down_points)
-                else:
-                    must_put_down_points = True    
-                    # sort new hand
-                    player.cards_in_hand = potential_hand
-                    player.sort_by(player.cards_in_hand, player.method)
-                    return (is_valid_pick, must_put_down_points, first_card)
+
+            for L in range(0, len(potential_hand) + 1):
+                for subset_hand in itertools.combinations(potential_hand, L):
+                    if first_card in subset_hand:
+                        if is_valid(subset_hand):
+                            is_valid_pick = True
+                            break   
+                        
+            if not is_valid_pick:        
+                # check every combination of cards on the table
+                all_tabled_cards = self.get_all_tabled_cards()[:]
+                for player_cards in all_tabled_cards:
+                    for points in player_cards:
+                        points.append(first_card)
+                        if is_valid(points):
+                            is_valid_pick = True
+                            break
+                        
+            if not is_valid_pick: 
+                # put cards back on table
+                self.table.cards_on_table = old_cards
+                # remove cards from hand
+                player.cards_in_hand = old_hand        
+                return (is_valid_pick, must_put_down_points)
+            else:
+                must_put_down_points = True    
+                # sort new hand
+                player.cards_in_hand = potential_hand
+                player.sort_by(player.cards_in_hand, player.method)
+                return (is_valid_pick, must_put_down_points, first_card)
             
         
     def discard(self, player):
@@ -229,7 +247,7 @@ class Rummy(object):
         cards = cards.strip()
         cards = cards.split(', ')
         cards_to_choose_from = [str(card) for card in player.cards_in_hand]
-        # cards chosen must be in hand
+        # cards chosen must be in hand and must include required card if one exists
         while (not set(cards).issubset(set(cards_to_choose_from))) or (required_card and str(required_card) not in cards):
             if required_card and (str(required_card) not in cards):
                 print("You must use ", str(required_card), ". Try again \n")
@@ -318,29 +336,78 @@ class Rummy(object):
                     return False
             return True
         
+        def is_going_to_tabled_cards(subset_hand):
+            all_cards_on_table = self.get_all_tabled_cards()[:]
+            for player_cards in all_cards_on_table:
+                for points in player_cards:
+                    points += subset_hand
+                    if is_valid(points):
+                        return True
+            return False
+        
         def is_valid(subset_hand, subset_hand_objects):
             if len(set(subset_hand)) != len(subset_hand): # repeated card
                 print("Invalid. Cards cannot be repeated")
                 return False
-            if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
+            if is_meld(subset_hand_objects) or is_run(subset_hand_objects) or is_going_to_tabled_cards:
                 return True
             return False
         
         if is_valid(cards, cards_objects):
             cards_to_keep = []
             # place cards into player's cards on table
+            point_list = []
             for card in cards_objects:
-                player.cards_on_table.append(card)
+                point_list.append(card)
+            player.cards_on_table.append(point_list)
             # remove cards from player's hand
             for card in player.cards_in_hand:
                 if card not in cards_objects:
                     cards_to_keep.append(card)
             player.cards_in_hand = cards_to_keep
             player.sort_by(player.cards_in_hand, player.method)
+            # Update all cards on table
+            self.set_all_tabled_cards()
             return True
         else:
             return False
-                 
+     
+    def get_points(self, player, must_put_down_points, required_card):
+        if not must_put_down_points:
+            ask = input("Do you want to put down point cards? ")
+            while ask != "yes" and ask != "no":
+                print("Invalid entry. Please answer 'yes' or 'no'. \n")
+                ask = input()
+        else:
+            ask = "yes"
+            
+        if ask == "yes": 
+            multiple = True
+            while multiple:
+                # table cards
+                cards_tabled = self.table_cards(player, required_card)
+                if cards_tabled == True and player.win_round():
+                    multiple = False
+                    winner = i + 1
+                    return winner
+                if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
+                    ask = input("Try again? ")
+                    while ask != "yes" and ask != "no":
+                        print("Invalid entry. Please answer 'yes' or 'no'. \n")
+                        ask = input()
+                    if ask == "no":
+                        multiple = False
+                elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
+                    print("Try again.")
+                else:
+                    required_card = None
+                    ask = input("Do you have another set of cards to put down for points? \n")
+                    while ask != "yes" and ask != "no":
+                        print("Invalid entry. Please answer 'yes' or 'no'. \n")
+                        ask = input()
+                    if ask == "no":
+                        multiple = False
+         
  
     # simulate the play of rummy
     def play(self):
@@ -369,43 +436,12 @@ class Rummy(object):
             print()
             
             # get points
-            if not must_put_down_points:
-                ask = input("Do you want to put down point cards? ")
-                while ask != "yes" and ask != "no":
-                    print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                    ask = input()
-            else:
-                ask = "yes"
-            if ask == "yes": 
-                multiple = True
-                while multiple:
-                    # table cards
-                    cards_tabled = self.table_cards(player, required_card)
-                    if cards_tabled == True and player.win_round():
-                        multiple = False
-                        winner = i + 1
-                        return winner
-                    if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
-                        ask = input("Try again? ")
-                        while ask != "yes" and ask != "no":
-                            print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                            ask = input()
-                        if ask == "no":
-                            multiple = False
-                    elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
-                        print("Try again.")
-                    else:
-                        ask = input("Do you have another set of cards to put down for points? \n")
-                        while ask != "yes" and ask != "no":
-                            print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                            ask = input()
-                        if ask == "no":
-                            multiple = False
-
-                    print(player.get_cards_in_hand())
-                    print(player.get_cards_on_table())
-                    print(str(self.table))
-                    print()
+            self.get_points(player, must_put_down_points, required_card)
+            
+            print(player.get_cards_in_hand())
+            print(player.get_cards_on_table())
+            print(str(self.table))
+            print()
             
             # discard
             self.discard(player)
