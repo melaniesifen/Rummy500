@@ -101,8 +101,7 @@ class Rummy(object):
                     sorted_hand = sorted_s + sorted_h + sorted_d + sorted_c
                     return sorted_hand
                 else:
-                    card_ranks = [card.rank for card in hand]
-                    sorted_hand = sorted(card_ranks)
+                    sorted_hand = sorted(hand)
                     return sorted_hand
             
             def is_run(subset_hand):
@@ -154,23 +153,25 @@ class Rummy(object):
                     new_card = Card(rank = 10, suit = new_card[2])
                 else:
                     new_card = Card(rank = int(new_card[0]), suit = new_card[1])
+            # take cards off the table
+            old_cards = self.table.cards_on_table[:]
             new_cards = self.table.pickup_cards_on_table(new_card)
             # put cards in player's hand
-            old_hand = player.cards_in_hand
+            old_hand = player.cards_in_hand[:]
             for card in new_cards:
                 player.pick(card)
                 first_card = card
                                
             # sort new hand
-            # player.sort_by(player.cards_in_hand, player.method)
-            
-            player.cards_in_hand = sort_subset(player.cards_in_hand, player.method)
+            player.cards_in_hand = sort_subset(player.cards_in_hand, player.method)            
         
             # check every combination of cards in the player's hand
-            # check every combination of cards on the table
+            ## check every combination of cards on the table
             potential_hand = player.cards_in_hand
             if len(new_cards) == 1:
                 is_valid_pick = True
+                player.cards_in_hand = potential_hand
+                player.sort_by(player.cards_in_hand, player.method)
                 return (is_valid_pick, must_put_down_points)
             if len(new_cards) > 1:
                 for L in range(0, len(potential_hand) + 1):
@@ -181,17 +182,16 @@ class Rummy(object):
                                 break
                 if not is_valid_pick: 
                     # put cards back on table
-                    for card in new_cards: 
-                        self.table.place_card_on_table(card)  
+                    self.table.cards_on_table = old_cards
                     # remove cards from hand
-                    player.cards_in_hand = old_hand          
+                    player.cards_in_hand = old_hand        
                     return (is_valid_pick, must_put_down_points)
                 else:
                     must_put_down_points = True    
                     # sort new hand
                     player.cards_in_hand = potential_hand
                     player.sort_by(player.cards_in_hand, player.method)
-                    return (is_valid_pick, must_put_down_points)
+                    return (is_valid_pick, must_put_down_points, first_card)
             
         
     def discard(self, player):
@@ -224,17 +224,22 @@ class Rummy(object):
         player.sort_by(player.cards_in_hand, player.method)
     
     
-    def table_cards(self, player):
+    def table_cards(self, player, required_card):
         cards = input("Choose cards to place on table for points. Separate by commas. ")
         cards = cards.strip()
         cards = cards.split(', ')
         cards_to_choose_from = [str(card) for card in player.cards_in_hand]
         # cards chosen must be in hand
-        while not set(cards).issubset(set(cards_to_choose_from)):
+        while (not set(cards).issubset(set(cards_to_choose_from))) or (required_card and str(required_card) not in cards):
+            if required_card and (str(required_card) not in cards):
+                print("You must use ", str(required_card), ". Try again \n")
+                cards = input()
+                continue
             print("Invalid entry. Please choose cards that are currently in your hand. \n")
-            print("If you don't have any cards to put down type 'no'.")
+            if not required_card:
+                print("If you don't have any cards to put down type 'no'.")
             cards = input()
-            if cards == "no":
+            if cards == "no" and not required_card:
                 return
             cards = cards.strip()
             cards = cards.split(', ')
@@ -280,8 +285,7 @@ class Rummy(object):
                 sorted_hand = sorted_s + sorted_h + sorted_d + sorted_c
                 return sorted_hand
             else:
-                card_ranks = [card.rank for card in hand]
-                sorted_hand = sorted(card_ranks)
+                sorted_hand = sorted(hand)
                 return sorted_hand
             
         def is_run(subset_hand):
@@ -353,6 +357,9 @@ class Rummy(object):
             pickup = self.pickup(player)
             valid_pickup = pickup[0]
             must_put_down_points = pickup[1]
+            required_card = None
+            if len(pickup) == 3:
+                required_card = pickup[2]
             while not valid_pickup:
                 print("Invalid selection. Try again.")
                 print()
@@ -373,7 +380,7 @@ class Rummy(object):
                 multiple = True
                 while multiple:
                     # table cards
-                    cards_tabled = self.table_cards(player)
+                    cards_tabled = self.table_cards(player, required_card)
                     if cards_tabled == True and player.win_round():
                         multiple = False
                         winner = i + 1
@@ -435,12 +442,3 @@ def main():
     game.play_to_win()
 
 main()
-# BUG: To reproduce, have player try to pick mutlple cards from table and the first card is not needed.
-# TODO: Add point cards to point cards already on table.
-# This might be better done but putting cards on table as a list of lists
-# TODO: Add point cards to other people's points
-# TODO: Add rounds and points
-
-# Add graphics
-# Add computer
-# Make computer smarter
