@@ -18,8 +18,12 @@ class Player(object):
         return "Hand : " + card_string
     
     def get_cards_on_table(self):
-        card_string = ' '.join(str(card) for card in self.cards_on_table)
-        return "Point cards on table: " + card_string
+        all_cards_on_table = []
+        for points in self.cards_on_table:
+            points_s = ', '.join(str(card) for card in points)
+            all_cards_on_table.append(points_s)
+        
+        return "Point cards on table: " + ' | '.join(s for s in all_cards_on_table)
         
     def pick(self, card):
         self.cards_in_hand.append(card)
