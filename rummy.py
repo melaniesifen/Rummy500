@@ -442,7 +442,4 @@ def main():
     game.play_to_win()
 
 main()
-<<<<<<< HEAD
 
-=======
->>>>>>> main
