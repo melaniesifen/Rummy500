@@ -2,10 +2,11 @@ from card import Card
 
 class Player(object):
     
-    def __init__(self, cards_in_hand, cards_on_table, method):
+    def __init__(self, cards_in_hand, cards_on_table, method = "suit", points = 0):
         self.cards_in_hand = cards_in_hand
         self.cards_on_table = cards_on_table
         self.method = method
+        self.points = points
         
     def get_method(self):
         return self.method
@@ -31,21 +32,24 @@ class Player(object):
     def discard(self, card):
         self.cards_in_hand.remove(card)
         
-    def get_points(self, on_table):
+    def calculate_points(self, hand):
         count = 0
-        for card in on_table:
-            if card.rank > 10:
+        for card in hand:
+            if card.rank < 10:
                 count += 5
             elif card.rank < 14:
                 count += 10
             else: # Ace
                 count += 15
+        return count
                 
     def end_points(self):
-        return points(self.cards_on_table) - point(self.cards_in_hand)
+        cards_on_table = [card for points in self.cards_on_table for card in points]
+        self.points = self.calculate_points(cards_on_table) - self.calculate_points(self.cards_in_hand)
+        return self.points
     
     def win_round(self):
-        if self.cards_in_hand == 0:
+        if len(self.cards_in_hand) == 0:
             return True
         return False
     
