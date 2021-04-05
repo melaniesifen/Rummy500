@@ -7,18 +7,20 @@ from table import Table
     
 class Rummy(object):
     # constructor
-    def __init__(self, num_players = 2):
+    def __init__(self, num_players = 2, players = [], round_number = 1):
         self.deck = Deck()
         self.deck.shuffle()
         self.num_players = num_players
         self.num_cards_in_hand = 10
-        self.players = []
+        self.players = players
         self.all_tabled_cards = []
+        self.round_number = round_number
         
-        # add players to game
-        for i in range(self.num_players):
-            player = Player([], [], method = "suit")
-            self.players.append(player)
+        # add players to game if there aren't any
+        if self.round_number == 1:
+            for i in range(self.num_players):
+                player = Player([], [], method = "suit")
+                self.players.append(player)
         
         # deal the cards to the players
         for i in range(self.num_cards_in_hand):
@@ -27,13 +29,14 @@ class Rummy(object):
         
         # sort the hands of each player and print
         for i, player in enumerate(self.players):
-            while True:
-                method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
-                if method != "rank" and method != "suit":
-                    print("Invalid entry. Please type 'rank' or 'suit'.")
-                    continue
-                break
-            player.set_method(method)
+            if self.round_number == 1:
+                while True:
+                    method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
+                    if method != "rank" and method != "suit":
+                        print("Invalid entry. Please type 'rank' or 'suit'.")
+                        continue
+                    break
+                player.set_method(method)
             player.sort_by(player.cards_in_hand, player.method)
             print("Player " + str(i + 1) + " " + player.get_cards_in_hand())
             print()
@@ -42,14 +45,14 @@ class Rummy(object):
         self.table = Table(self.deck, [])
             
     def get_all_tabled_cards(self):
-        return self.all_tabled_cards
+        tabled_cards = self.all_tabled_cards[:]
+        return tabled_cards
     
     def set_all_tabled_cards(self):
         for player in self.players:
             self.all_tabled_cards.append(player.cards_on_table)
                 
     def pickup(self, player):
-        
         is_valid_pick = False
         must_put_down_points = False
         # pick card
@@ -125,8 +128,10 @@ class Rummy(object):
                 rank_order = True
                 for i in range(len(subset_hand) - 1):
                     if subset_hand[i].rank == 14:
+                        rank_order = False
+                    if subset_hand[i + 1].rank == 14:
                         if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)) == False:
-                            if (rank_order and (1 == subset_hand[i + 1].rank - 1)) == False:
+                            if (rank_order and (subset_hand[0].rank == 2)) == False:
                                 rank_order = False
                     rank_order = rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)
                 if not rank_order:
@@ -320,8 +325,10 @@ class Rummy(object):
             rank_order = True
             for i in range(len(subset_hand) - 1):
                 if subset_hand[i].rank == 14:
+                    rank_order = False
+                if subset_hand[i + 1].rank == 14:
                     if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)) == False:
-                        if (rank_order and (1 == subset_hand[i + 1].rank - 1)) == False:
+                        if (rank_order and (subset_hand[0].rank == 2)) == False:
                             rank_order = False
                 rank_order = rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)
             if not rank_order:
@@ -388,8 +395,7 @@ class Rummy(object):
                 cards_tabled = self.table_cards(player, required_card)
                 if cards_tabled == True and player.win_round():
                     multiple = False
-                    winner = i + 1
-                    return winner
+                    return True
                 if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
                     ask = input("Try again? ")
                     while ask != "yes" and ask != "no":
@@ -407,11 +413,12 @@ class Rummy(object):
                         ask = input()
                     if ask == "no":
                         multiple = False
+        return False
          
  
     # simulate the play of rummy
     def play(self):
-        winner = 0
+        winner = None
         for i, player in enumerate(self.players):
             # show cards
             print("PLAYER", i + 1)
@@ -436,7 +443,10 @@ class Rummy(object):
             print()
             
             # get points
-            self.get_points(player, must_put_down_points, required_card)
+            is_winner = self.get_points(player, must_put_down_points, required_card)
+            if is_winner:
+                winner = i + 1
+                return winner
             
             print(player.get_cards_in_hand())
             print(player.get_cards_on_table())
@@ -453,17 +463,57 @@ class Rummy(object):
             print(player.get_cards_on_table())
             print()
             
-        return 0
+        return winner
+    
+    def get_all_points(self):
+        player_points = {}
+        for i, player in enumerate(self.players):
+            player_points[i] = player.end_points()
+        return player_points
+    
+    def is_game_winner(self, player_points):
+        to_win = 500
+        winners = [player for player, points in player_points.items() if points == max(player_points.values()) and points >= to_win]
+        return winners
             
     def play_to_win(self):
-        winner = 0
-        while winner == 0:
-            winner = self.play()
-            if winner != 0:
-                print("Winner is player ", winner, " !")
-                winner = True
-    
-    
+        round_winner = None
+        game_winner = None
+        round_number = 1
+        while not game_winner:
+            if round_number > 1:
+                # set up next round
+                num_players = self.num_players
+                players = []
+                for i, player in enumerate(self.players):
+                    players.append(Player([], [], player.method, player.points))
+                next_round = Rummy(num_players, players)
+                self = next_round
+            while not round_winner:
+                round_winner = self.play()
+                if round_winner:
+                    # get each player's points
+                    player_points = self.get_all_points()
+                    # check if anyone has 500 points
+                    game_winner = self.is_game_winner(player_points)
+                    if not game_winner:
+                        print("Winner of round ", round_number, " is player ", round_winner, " !")
+                        round_number += 1
+                        round_winner = True
+                    elif len(game_winner) == 1:
+                        print("Winner is: player ", game_winner[0])
+                        round_winner = True
+                        game_winner = True
+                    else:
+                        winner_s = ""
+                        for player in game_winner:
+                            winner_s = ", ".join(str(player)) 
+                        print("Winners are: ", winner_s, "!")
+                        round_winner = True
+                        game_winner = True
+                
+                
+                
             
 def main():
     # prompt the user to enter the number of plaers
