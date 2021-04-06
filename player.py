@@ -1,4 +1,5 @@
 from card import Card
+from CommonFunctions import _sort_by, str_to_card
 
 class Player(object):
     
@@ -67,27 +68,4 @@ class Player(object):
         return "Cards in hand: " + cards_in_hand
     
     def sort_by(self, hand, method):
-        if method == "suit":
-            sorted_hand = []
-            s = []
-            h = []
-            d = []
-            c = []
-            for card in hand:
-                if card.suit == 'S':
-                    s.append(card)
-                elif card.suit == 'H':
-                    h.append(card)
-                elif card.suit == 'D':
-                    d.append(card)
-                else:
-                    c.append(card)
-            sorted_s = sorted(s)
-            sorted_h = sorted(h)
-            sorted_d = sorted(d)
-            sorted_c = sorted(c)
-            sorted_hand = sorted_s + sorted_h + sorted_d + sorted_c   
-            self.cards_in_hand = sorted_hand
-        else:
-            sorted_hand = sorted(hand)
-            self.cards_in_hand = sorted_hand
+        _sort_by(self, self.cards_in_hand, self.method)
