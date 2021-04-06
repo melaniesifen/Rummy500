@@ -1,5 +1,7 @@
 import random
 import itertools
+from copy import deepcopy
+from CommonFunctions import _sort_by, is_run, is_meld, str_to_card
 from card import Card
 from deck import Deck
 from player import Player
@@ -47,7 +49,7 @@ class Rummy(object):
         self.table = Table(self.deck, [])
             
     def get_all_tabled_cards(self):
-        tabled_cards = self.all_tabled_cards[:]
+        tabled_cards = deepcopy(self.all_tabled_cards)
         return tabled_cards
     
     def set_all_tabled_cards(self):
@@ -92,96 +94,26 @@ class Rummy(object):
                     player.pick(new_card)
                     break
             
-            # check that card is valid to pick up
-            def sort_subset(hand, method):
-                if method == "suit":
-                    sorted_hand = []
-                    s = []
-                    h = []
-                    d = []
-                    c = []
-                    for card in hand:
-                        if card.suit == 'S':
-                            s.append(card)
-                        elif card.suit == 'H':
-                            h.append(card)
-                        elif card.suit == 'D':
-                            d.append(card)
-                        else:
-                            c.append(card)
-                    sorted_s = sorted(s)
-                    sorted_h = sorted(h)
-                    sorted_d = sorted(d)
-                    sorted_c = sorted(c)
-                    sorted_hand = sorted_s + sorted_h + sorted_d + sorted_c
-                    return sorted_hand
-                else:
-                    sorted_hand = sorted(hand)
-                    return sorted_hand
-            
-            def is_run(subset_hand):
-                if len(subset_hand) < 3:
-                    return False
-            
-                same_suit = True
-                for i in range(len(subset_hand) - 1):
-                    same_suit = same_suit and (subset_hand[i].suit == subset_hand[i + 1].suit)
-                if not same_suit:
-                    return False
-
-                sorted_subset_hand = sort_subset(subset_hand, method = "rank")
-                rank_order = True
-                for i in range(len(subset_hand) - 1):
-                    if subset_hand[i].rank == 14:
-                        rank_order = False
-                    if subset_hand[i + 1].rank == 14:
-                        if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)) == False:
-                            if (rank_order and (subset_hand[0].rank == 2)) == False:
-                                rank_order = False
-                    rank_order = rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)
-                if not rank_order:
-                    return False
-                return True
-            
-            def is_meld(subset_hand):
-                if len(subset_hand) < 3 or len(subset_hand) > 4:
-                    return False
-                for i in range(len(subset_hand) - 1):
-                    if subset_hand[i].rank != subset_hand[i + 1].rank:
-                        return False
-                return True
-            
+            # check that card is valid to pick up            
             def is_valid(subset_hand_objects):
                 if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
                     return True
                 return False
 
             # take cards from table
-            if type(new_card) == str:
-                if new_card[0] == "J":
-                    new_card = Card(rank = 11, suit = new_card[1])
-                elif new_card[0] == "Q":
-                    new_card = Card(rank = 12, suit = new_card[1])
-                elif new_card[0] == "K":
-                    new_card = Card(rank = 13, suit = new_card[1])
-                elif new_card[0] == "A":
-                    new_card = Card(rank = 14, suit = new_card[1])
-                elif new_card[0] == "1" and new_card[1] == "0":
-                    new_card = Card(rank = 10, suit = new_card[2])
-                else:
-                    new_card = Card(rank = int(new_card[0]), suit = new_card[1])
-                    
+            new_card = str_to_card(new_card)
+            
             # take cards off the table
-            old_cards = self.table.cards_on_table[:]
+            old_cards = deepcopy(self.table.cards_on_table)
             new_cards = self.table.pickup_cards_on_table(new_card)
             # put cards in player's hand
-            old_hand = player.cards_in_hand[:]
+            old_hand = deepcopy(player.cards_in_hand)
             for card in new_cards:
                 player.pick(card)
                 first_card = card
                                
             # sort new hand
-            player.cards_in_hand = sort_subset(player.cards_in_hand, player.method)            
+            player.cards_in_hand = _sort_by(player.cards_in_hand, player.method)            
         
             # check every combination of cards in the player's hand
             potential_hand = player.cards_in_hand
@@ -200,7 +132,7 @@ class Rummy(object):
                         
             if not is_valid_pick:        
                 # check every combination of cards on the table
-                all_tabled_cards = self.get_all_tabled_cards()[:]
+                all_tabled_cards = deepcopy(self.get_all_tabled_cards())
                 for player_cards in all_tabled_cards:
                     for points in player_cards:
                         points.append(first_card)
@@ -234,20 +166,7 @@ class Rummy(object):
         self.table.place_card_on_table(card)
         
         # remove card from player's hand
-        if type(card) == str:
-            if card[0] == "J":
-                card = Card(rank = 11, suit = card[1])
-            elif card[0] == "Q":
-                card = Card(rank = 12, suit = card[1])
-            elif card[0] == "K":
-                card = Card(rank = 13, suit = card[1])
-            elif card[0] == "A":
-                card = Card(rank = 14, suit = card[1])
-            elif card[0] == "1" and card[1] == "0":
-                card = Card(rank = 10, suit = card[2])
-            else:
-                card = Card(rank = int(card[0]), suit = card[1])
-                
+        card = str_to_card(card)
         player.discard(card)
         player.sort_by(player.cards_in_hand, player.method)
     
@@ -275,93 +194,24 @@ class Rummy(object):
         # cards is list of str(cards), cards_objects is list of cards 
         cards_objects = []
         for card in cards:
-            if type(card) == str:
-                if card[0] == "J":
-                    card = Card(rank = 11, suit = card[1])
-                elif card[0] == "Q":
-                    card = Card(rank = 12, suit = card[1])
-                elif card[0] == "K":
-                    card = Card(rank = 13, suit = card[1])
-                elif card[0] == "A":
-                    card = Card(rank = 14, suit = card[1])
-                elif card[0] == "1" and card[1] == "0":
-                    card = Card(rank = 10, suit = card[2])
-                else:
-                    card = Card(rank = int(card[0]), suit = card[1])
+            card = str_to_card(card)
             cards_objects.append(card)
-            
-        def sort_subset(hand, method):
-            if method == "suit":
-                sorted_hand = []
-                s = []
-                h = []
-                d = []
-                c = []
-                for card in hand:
-                    if card.suit == 'S':
-                        s.append(card)
-                    elif card.suit == 'H':
-                        h.append(card)
-                    elif card.suit == 'D':
-                        d.append(card)
-                    else:
-                        c.append(card)
-                sorted_s = sorted(s)
-                sorted_h = sorted(h)
-                sorted_d = sorted(d)
-                sorted_c = sorted(c)
-                sorted_hand = sorted_s + sorted_h + sorted_d + sorted_c
-                return sorted_hand
-            else:
-                sorted_hand = sorted(hand)
-                return sorted_hand
-            
-        def is_run(subset_hand):
-            if len(subset_hand) < 3:
-                return False
-            
-            same_suit = True
-            for i in range(len(subset_hand) - 1):
-                same_suit = same_suit and (subset_hand[i].suit == subset_hand[i + 1].suit)
-            if not same_suit:
-                return False
-
-            sorted_subset_hand = sort_subset(subset_hand, method = "rank")
-            rank_order = True
-            for i in range(len(subset_hand) - 1):
-                if subset_hand[i].rank == 14:
-                    rank_order = False
-                if subset_hand[i + 1].rank == 14:
-                    if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)) == False:
-                        if (rank_order and (subset_hand[0].rank == 2)) == False:
-                            rank_order = False
-                rank_order = rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)
-            if not rank_order:
-                return False
-            return True
-            
-        def is_meld(subset_hand):
-            if len(subset_hand) < 3 or len(subset_hand) > 4:
-                return False
-            for i in range(len(subset_hand) - 1):
-                if subset_hand[i].rank != subset_hand[i + 1].rank:
-                    return False
-            return True
-        
+         
         def is_going_to_tabled_cards(subset_hand):
-            all_cards_on_table = self.get_all_tabled_cards()[:]
+            all_cards_on_table = deepcopy(self.get_all_tabled_cards())
             for player_cards in all_cards_on_table:
-                for points in player_cards:
-                    points += subset_hand
-                    if is_valid(points):
+                for point_cards in player_cards:
+                    point_cards += subset_hand
+                    if is_meld(point_cards) or is_run(point_cards):
                         return True
+            print("cards on table")
             return False
         
         def is_valid(subset_hand, subset_hand_objects):
             if len(set(subset_hand)) != len(subset_hand): # repeated card
                 print("Invalid. Cards cannot be repeated")
                 return False
-            if is_meld(subset_hand_objects) or is_run(subset_hand_objects) or is_going_to_tabled_cards:
+            if is_meld(subset_hand_objects) or is_run(subset_hand_objects) or is_going_to_tabled_cards(subset_hand_objects):
                 return True
             return False
         
@@ -404,14 +254,14 @@ class Rummy(object):
                     multiple = False
                     return True
                 if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
-                    ask = input("Try again? ")
+                    ask = input("Invalid selection. Try again? ")
                     while ask != "yes" and ask != "no":
                         print("Invalid entry. Please answer 'yes' or 'no'. \n")
                         ask = input()
                     if ask == "no":
                         multiple = False
                 elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
-                    print("Try again.")
+                    print("Invalid selection. Try again.")
                 elif cards_tabled == "no":
                     multiple = False
                 else:
