@@ -37,9 +37,11 @@ class Rummy(object):
                         continue
                     break
                 player.set_method(method)
-            player.sort_by(player.cards_in_hand, player.method)
-            print("Player " + str(i + 1) + " " + player.get_cards_in_hand())
-            print()
+                player.sort_by(player.cards_in_hand, player.method)
+                print("Player " + str(i + 1) + " " + player.get_cards_in_hand())
+                print()
+            else:
+                player.sort_by(player.cards_in_hand, player.method)
             
         # show first card of the deck  
         self.table = Table(self.deck, [])
@@ -479,38 +481,48 @@ class Rummy(object):
     def play_to_win(self):
         round_winner = None
         game_winner = None
-        round_number = 1
-        while not game_winner:
-            if round_number > 1:
-                # set up next round
-                num_players = self.num_players
-                players = []
-                for i, player in enumerate(self.players):
-                    players.append(Player([], [], player.method, player.points))
-                next_round = Rummy(num_players, players)
-                self = next_round
-            while not round_winner:
-                round_winner = self.play()
-                if round_winner:
-                    # get each player's points
-                    player_points = self.get_all_points()
-                    # check if anyone has 500 points
-                    game_winner = self.is_game_winner(player_points)
-                    if not game_winner:
-                        print("Winner of round ", round_number, " is player ", round_winner, " !")
-                        round_number += 1
-                        round_winner = True
-                    elif len(game_winner) == 1:
-                        print("Winner is: player ", game_winner[0])
-                        round_winner = True
-                        game_winner = True
-                    else:
-                        winner_s = ""
-                        for player in game_winner:
-                            winner_s = ", ".join(str(player)) 
-                        print("Winners are: ", winner_s, "!")
-                        round_winner = True
-                        game_winner = True
+        while not round_winner:
+            round_winner = self.play()
+            if round_winner:
+                # set winning player as winner
+                winning_player = self.players[round_winner - 1]
+                winning_player.set_winner()
+                # get each player's points
+                player_points = self.get_all_points()
+                # check if anyone has 500 points
+                game_winner = self.is_game_winner(player_points)
+                if not game_winner:
+                    print()
+                    print("Winner of round ", self.round_number, " is Player ", round_winner, " !")
+                    for i, player in enumerate(self.players):
+                        print("Player ", i + 1, "'s points: ", player.points)
+                    print()
+                    print()
+                    print("Next round!")
+                    print()
+                    self.round_number += 1
+                    round_winner = True
+                    winning_player.set_winner() # reset winning status
+                elif len(game_winner) == 1:
+                    print("Winner is: player ", game_winner[0] + 1)
+                    round_winner = True
+                    game_winner = True
+                else:
+                    winner_s = ""
+                    for player in game_winner:
+                        player += 1
+                        winner_s = ", ".join(str(player)) 
+                    print("Winners are: ", winner_s, "!")
+                    round_winner = True
+                    game_winner = True
+        if not game_winner:
+            # set up next round
+            num_players = self.num_players
+            players = []
+            for i, player in enumerate(self.players):
+                players.append(Player([], [], player.method, player.points))
+            self = Rummy(num_players, players, self.round_number)
+            self.play_to_win()
                 
                 
                 
