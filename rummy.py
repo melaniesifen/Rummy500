@@ -268,7 +268,7 @@ class Rummy(object):
                 print("If you don't have any cards to put down type 'no'.")
             cards = input()
             if cards == "no" and not required_card:
-                return
+                return "no"
             cards = cards.strip()
             cards = cards.split(', ')
         
@@ -410,6 +410,8 @@ class Rummy(object):
                         multiple = False
                 elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
                     print("Try again.")
+                elif cards_tabled == "no":
+                    multiple = False
                 else:
                     required_card = None
                     ask = input("Do you have another set of cards to put down for points? \n")
