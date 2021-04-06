@@ -351,9 +351,9 @@ class Rummy(object):
         def is_going_to_tabled_cards(subset_hand):
             all_cards_on_table = self.get_all_tabled_cards()[:]
             for player_cards in all_cards_on_table:
-                for points in player_cards:
-                    points += subset_hand
-                    if is_valid(points):
+                for point_cards in player_cards:
+                    point_cards += subset_hand
+                    if is_meld(point_cards) or is_run(point_cards):
                         return True
             return False
         
@@ -361,7 +361,7 @@ class Rummy(object):
             if len(set(subset_hand)) != len(subset_hand): # repeated card
                 print("Invalid. Cards cannot be repeated")
                 return False
-            if is_meld(subset_hand_objects) or is_run(subset_hand_objects) or is_going_to_tabled_cards:
+            if is_meld(subset_hand_objects) or is_run(subset_hand_objects) or is_going_to_tabled_cards(subset_hand_objects):
                 return True
             return False
         
@@ -404,14 +404,14 @@ class Rummy(object):
                     multiple = False
                     return True
                 if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
-                    ask = input("Try again? ")
+                    ask = input("Invalid selection. Try again? ")
                     while ask != "yes" and ask != "no":
                         print("Invalid entry. Please answer 'yes' or 'no'. \n")
                         ask = input()
                     if ask == "no":
                         multiple = False
                 elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
-                    print("Try again.")
+                    print("Invalid selection. Try again.")
                 elif cards_tabled == "no":
                     multiple = False
                 else:
