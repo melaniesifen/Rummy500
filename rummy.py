@@ -77,6 +77,9 @@ class Rummy(object):
             # take card from table
             new_card = input("Choose a card from the table to pick up. ")
             cards_to_choose_from = [str(card) for card in self.table.cards_on_table]
+            while len(new_card) > 3: # multiple entries
+                print("Pick only one card. Any cards in front of that card will go into your hand.")
+                new_card = input()
             while new_card not in cards_to_choose_from:
                 print("Invalid entry. You must choose a card that is already on the table.")
                 print("To pick from the pile instead, type: pile")
