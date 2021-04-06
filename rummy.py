@@ -371,6 +371,8 @@ class Rummy(object):
             point_list = []
             for card in cards_objects:
                 point_list.append(card)
+            # sort the cards before putting on table
+            point_list = sorted(point_list)
             player.cards_on_table.append(point_list)
             # remove cards from player's hand
             for card in player.cards_in_hand:
