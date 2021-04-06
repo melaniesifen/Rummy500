@@ -7,6 +7,12 @@ class Player(object):
         self.cards_on_table = cards_on_table
         self.method = method
         self.points = points
+        self.winner = False
+        
+    def set_winner(self):
+        # switch
+        winner = self.winner
+        self.winner = not winner
         
     def get_method(self):
         return self.method
@@ -45,7 +51,10 @@ class Player(object):
                 
     def end_points(self):
         cards_on_table = [card for points in self.cards_on_table for card in points]
-        self.points = self.calculate_points(cards_on_table) - self.calculate_points(self.cards_in_hand)
+        new_points = self.calculate_points(cards_on_table) - self.calculate_points(self.cards_in_hand)
+        if self.winner:
+            new_points += 25 # 25 points for winning the round
+        self.points += new_points
         return self.points
     
     def win_round(self):
