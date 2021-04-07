@@ -17,6 +17,8 @@ class Rummy(object):
         self.players = players
         self.all_tabled_cards = []
         self.round_number = round_number
+        self.joint_runs = []
+        self.all_melds = []
         
         # add players to game if there aren't any
         if self.round_number == 1:
@@ -55,7 +57,31 @@ class Rummy(object):
     def set_all_tabled_cards(self):
         for player in self.players:
             self.all_tabled_cards.append(player.cards_on_table)
-                
+            
+    def get_all_joint_runs(self):
+        all_cards = deepcopy(self.all_tabled_cards)
+        joint_runs = deepcopy(self.joint_runs)
+        cards_in_joint_runs = [card for card in joint_runs]
+        for player_cards in all_cards:
+            for points in player_cards:
+                if is_run(points) and points not in joint_runs:
+                    for card in points:
+                        if type(card) == Card:
+                            if card not in cards_in_joint_runs:
+                                joint_runs.append(points)                            
+        self.joint_runs = joint_runs
+        return joint_runs
+    
+    def get_all_melds(self):
+        all_cards = deepcopy(self.all_tabled_cards)
+        all_melds = deepcopy(self.all_melds)
+        for player_cards in all_cards:
+            for points in player_cards:
+                if is_meld(points) and points not in all_melds:
+                    all_melds.append(points)        
+        self.all_melds = all_melds
+        return all_melds
+                   
     def pickup(self, player):
         is_valid_pick = False
         must_put_down_points = False
@@ -102,7 +128,6 @@ class Rummy(object):
 
             # take cards from table
             new_card = str_to_card(new_card)
-            
             # take cards off the table
             old_cards = deepcopy(self.table.cards_on_table)
             new_cards = self.table.pickup_cards_on_table(new_card)
@@ -113,7 +138,7 @@ class Rummy(object):
                 first_card = card
                                
             # sort new hand
-            player.cards_in_hand = _sort_by(player.cards_in_hand, player.method)            
+            player.cards_in_hand = _sort_by(None, player.cards_in_hand, player.method)            
         
             # check every combination of cards in the player's hand
             potential_hand = player.cards_in_hand
@@ -128,18 +153,29 @@ class Rummy(object):
                     if first_card in subset_hand:
                         if is_valid(subset_hand):
                             is_valid_pick = True
-                            break   
-                        
-            if not is_valid_pick:        
+                            player.cards_in_hand = potential_hand
+                            player.sort_by(player.cards_in_hand, player.method)
+                            must_put_down_points = True
+                            return (is_valid_pick, must_put_down_points, first_card)
+                      
+            if not is_valid_pick:     
                 # check every combination of cards on the table
-                all_tabled_cards = deepcopy(self.get_all_tabled_cards())
-                for player_cards in all_tabled_cards:
-                    for points in player_cards:
-                        points.append(first_card)
-                        if is_valid(points):
-                            is_valid_pick = True
-                            break
-                        
+                all_melds = deepcopy(self.get_all_melds())
+                for points in all_melds:
+                    points.append(first_card)
+                    if is_valid(points):
+                        is_valid_pick = True
+                        break
+                    
+            if not is_valid_pick:
+                # check if it can be added to existing joint runs            
+                all_joint_runs = deepcopy(self.get_all_joint_runs())
+                for run in all_joint_runs:
+                    run.append(first_card)
+                    if is_run(run):
+                        is_valid_pick = True
+                        break
+                    
             if not is_valid_pick: 
                 # put cards back on table
                 self.table.cards_on_table = old_cards
@@ -147,7 +183,7 @@ class Rummy(object):
                 player.cards_in_hand = old_hand        
                 return (is_valid_pick, must_put_down_points)
             else:
-                must_put_down_points = True    
+                must_put_down_points = True
                 # sort new hand
                 player.cards_in_hand = potential_hand
                 player.sort_by(player.cards_in_hand, player.method)
@@ -197,27 +233,82 @@ class Rummy(object):
             card = str_to_card(card)
             cards_objects.append(card)
          
-        def is_going_to_tabled_cards(subset_hand):
-            all_cards_on_table = deepcopy(self.get_all_tabled_cards())
-            for player_cards in all_cards_on_table:
-                for point_cards in player_cards:
-                    point_cards += subset_hand
-                    if is_meld(point_cards) or is_run(point_cards):
-                        return True
-            print("cards on table")
+        def is_going_to_tabled_cards(subset_hand):    
+            # check every combination of cards on the table
+            options = []
+            potential_points = []
+            
+            all_melds = deepcopy(self.get_all_melds())
+            for points in all_melds:
+                old_points = deepcopy(points)
+                points += subset_hand
+                if is_meld(points):
+                    options.append(old_points)
+                    potential_points.append(points)
+                        
+            # check if it can be added to existing joint runs            
+            all_joint_runs = deepcopy(self.get_all_joint_runs())
+            for run in all_joint_runs:
+                old_run = deepcopy(run)
+                run += subset_hand
+                if is_run(run):
+                    options.append(old_run)
+                    potential_points.append(run)
+                    
+            if len(options) > 0:
+                return (options, potential_points)
+            
             return False
         
         def is_valid(subset_hand, subset_hand_objects):
             if len(set(subset_hand)) != len(subset_hand): # repeated card
                 print("Invalid. Cards cannot be repeated")
                 return False
-            if is_meld(subset_hand_objects) or is_run(subset_hand_objects) or is_going_to_tabled_cards(subset_hand_objects):
+            if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
                 return True
-            return False
-        
-        if is_valid(cards, cards_objects):
-            cards_to_keep = []
+            valid_options = is_going_to_tabled_cards(subset_hand_objects)
+            if valid_options == False:
+                return False
+            else:
+                options = valid_options[0]
+                potential_points = valid_options[1]
+                return (options, potential_points)
+            
+        check = is_valid(cards, cards_objects)
+        if check != False:
+            if type(check) == tuple:
+                options = check[0]
+                potential_points = check[1]
+                options_list_str = [[str(card) for card in sublist] for sublist in options]
+                if len(options_list_str) > 1:
+                    print("Options to add points to: ")
+                    for i, option in enumerate(options_list_str):
+                        print(i + 1, ": ", option)
+                    ask_again = True
+                    while ask_again:
+                        choice = input("Which set are you adding this point card to? Select the number. ")
+                        try:
+                            choice = int(choice)
+                            check_potential_points_range = potential_points[choice - 1]
+                            check_options_range = options[choice - 1]
+                            if choice == 0:
+                                print("Invalid seletion. Try again.")
+                            else:
+                                ask_again = False
+                        except:
+                            print("Select the number next to the option you would like to choose.")
+                else:
+                    choice = 1
+                # if run then add to all runs
+                if is_run(potential_points[choice - 1]):
+                    self.joint_runs.remove(options[choice - 1])
+                    self.joint_runs.append(potential_points[choice - 1])
+                # if meld then add to all melds
+                elif is_meld(potential_points[choice - 1]):
+                    self.all_melds.remove(options[choice - 1])
+                    self.all_melds.append(potential_points[choice - 1])
             # place cards into player's cards on table
+            cards_to_keep = []
             point_list = []
             for card in cards_objects:
                 point_list.append(card)

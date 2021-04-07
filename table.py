@@ -33,7 +33,6 @@ class Table(object):
             to_pickup.append(c)
             if c == card:
                 break
-        
         # remove cards from table
         to_keep = []
         for c in self.cards_on_table:

@@ -2,8 +2,11 @@ from card import Card
 
 def _sort_by(self = None, hand = [], method = "suit"):
     if method == "suit":
-        if not self:
-            hand = [str_to_card(card) for card in hand]
+        changed_type = False
+        if hand:
+            if type(hand[0]) == str:
+                hand = [str_to_card(card) for card in hand]
+                changed_type = True
         sorted_hand = []
         s = []
         h = []
@@ -26,16 +29,23 @@ def _sort_by(self = None, hand = [], method = "suit"):
         if self:
             self.cards_in_hand = sorted_hand
         else:
-            sorted_hand = [str(card) for card in sorted_hand]
+            if changed_type:
+                sorted_hand = [str(card) for card in sorted_hand]
             return sorted_hand
     else:
-        if not self:
-            hand = [str_to_card(card) for card in hand]
-            sorted_hand = sorted(hand)
-            return sorted_hand
-        else:
-            sorted_hand = sorted(hand)
+        if hand:
+            if type(hand[0]) == str:
+                hand = [str_to_card(card) for card in hand]
+                sorted_hand = sorted(hand)
+                sorted_hand = [str(card) for card in sorted_hand]
+            else:
+                sorted_hand = sorted(hand)
+        if self:
             self.cards_in_hand = sorted_hand
+        else:
+            return sorted_hand
+            
+            
 
 def is_run(subset_hand):
     if len(subset_hand) < 3:
@@ -47,7 +57,7 @@ def is_run(subset_hand):
     if not same_suit:
         return False
 
-    sorted_subset_hand = _sort_by(subset_hand, method = "rank")
+    subset_hand = _sort_by(None, subset_hand, method = "rank")
     rank_order = True
     for i in range(len(subset_hand) - 1):
         if subset_hand[i].rank == 14:
