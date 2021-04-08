@@ -5,6 +5,7 @@ from CommonFunctions import _sort_by, is_run, is_meld, str_to_card
 from card import Card
 from deck import Deck
 from player import Player
+from cpu import CPU
 from table import Table
     
 class Rummy(object):
@@ -22,9 +23,15 @@ class Rummy(object):
         
         # add players to game if there aren't any
         if self.round_number == 1:
-            for i in range(self.num_players):
+            if num_players == 1:
                 player = Player([], [], method = "suit")
+                cpu = CPU([], [], method = "suit")
                 self.players.append(player)
+                self.players.append(cpu)
+            else:
+                for i in range(self.num_players):
+                    player = Player([], [], method = "suit")
+                    self.players.append(player)
         
         # deal the cards to the players
         for i in range(self.num_cards_in_hand):
@@ -34,13 +41,14 @@ class Rummy(object):
         # sort the hands of each player and print
         for i, player in enumerate(self.players):
             if self.round_number == 1:
-                while True:
-                    method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
-                    if method != "rank" and method != "suit":
-                        print("Invalid entry. Please type 'rank' or 'suit'.")
-                        continue
-                    break
-                player.set_method(method)
+                if type(player) == Player:
+                    while True:
+                        method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
+                        if method != "rank" and method != "suit":
+                            print("Invalid entry. Please type 'rank' or 'suit'.")
+                            continue
+                        break
+                    player.set_method(method)
                 player.sort_by(player.cards_in_hand, player.method)
                 print("Player " + str(i + 1) + " " + player.get_cards_in_hand())
                 print()
@@ -86,10 +94,13 @@ class Rummy(object):
         is_valid_pick = False
         must_put_down_points = False
         # pick card
-        pick_from = input("Pick from pile or pick from table? ")
-        while pick_from != "pile" and pick_from != "table":
-            print("Invalid entry. Please choose 'pile' or 'table'. \n")
-            pick_from = input()
+        if type(player) == Player:
+            pick_from = input("Pick from pile or pick from table? ")
+            while pick_from != "pile" and pick_from != "table":
+                print("Invalid entry. Please choose 'pile' or 'table'. \n")
+                pick_from = input()
+        else:
+            pass
         
         if pick_from == "pile":
             # take card from table
@@ -478,7 +489,7 @@ class Rummy(object):
 def main():
     # prompt the user to enter the number of plaers
     num_players = int (input ('Enter number of players: '))
-    while ((num_players < 2) or (num_players > 4)):
+    while (num_players > 4):
         num_players = int (input ('Enter number of players: '))
 
     # create the Poker object
