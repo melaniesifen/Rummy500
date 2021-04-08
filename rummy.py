@@ -23,7 +23,8 @@ class Rummy(object):
         
         # add players to game if there aren't any
         if self.round_number == 1:
-            if num_players == 1:
+            if self.num_players == 1:
+                self.num_players = 2
                 player = Player([], [], method = "suit")
                 cpu = CPU([], [], method = "suit")
                 self.players.append(player)
@@ -40,15 +41,14 @@ class Rummy(object):
         
         # sort the hands of each player and print
         for i, player in enumerate(self.players):
-            if self.round_number == 1:
-                if type(player) == Player:
-                    while True:
-                        method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
-                        if method != "rank" and method != "suit":
-                            print("Invalid entry. Please type 'rank' or 'suit'.")
-                            continue
-                        break
-                    player.set_method(method)
+            if self.round_number == 1 and type(player) == Player:
+                while True:
+                    method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
+                    if method != "rank" and method != "suit":
+                        print("Invalid entry. Please type 'rank' or 'suit'.")
+                        continue
+                    break
+                player.set_method(method)
                 player.sort_by(player.cards_in_hand, player.method)
                 print("Player " + str(i + 1) + " " + player.get_cards_in_hand())
                 print()
@@ -100,7 +100,15 @@ class Rummy(object):
                 print("Invalid entry. Please choose 'pile' or 'table'. \n")
                 pick_from = input()
         else:
-            pass
+            pick_from = player.pickup_strategy1(self.table.cards_on_table, self.all_melds, self.joint_runs)
+            if type(pick_from) == list:
+                best_cards = pick_from
+                for subset_cards in best_cards:
+                    for card in subset_cards:
+                        if card in self.table.cards_on_table:
+                            new_card = card
+                            break
+                pick_from = "table"
         
         if pick_from == "pile":
             # take card from table
@@ -113,23 +121,24 @@ class Rummy(object):
             return (is_valid_pick, must_put_down_points)
             
         elif pick_from == "table":
+            if type(player) == Player:
             # take card from table
-            new_card = input("Choose a card from the table to pick up. ")
-            cards_to_choose_from = [str(card) for card in self.table.cards_on_table]
-            while len(new_card) > 3: # multiple entries
-                print("Pick only one card. Any cards in front of that card will go into your hand.")
-                new_card = input()
-            while new_card not in cards_to_choose_from:
-                print("Invalid entry. You must choose a card that is already on the table.")
-                print("To pick from the pile instead, type: pile")
-                print("Otherwise, pick a card that is already on the table.")
-                new_card = input()
-                if new_card == "pile":
-                    # take card from pile
-                    new_card = self.table.pickup_card_from_pile()
-                     # put card in player's hand
-                    player.pick(new_card)
-                    break
+                new_card = input("Choose a card from the table to pick up. ")
+                cards_to_choose_from = [str(card) for card in self.table.cards_on_table]
+                while len(new_card) > 3: # multiple entries
+                    print("Pick only one card. Any cards in front of that card will go into your hand.")
+                    new_card = input()
+                while new_card not in cards_to_choose_from:
+                    print("Invalid entry. You must choose a card that is already on the table.")
+                    print("To pick from the pile instead, type: pile")
+                    print("Otherwise, pick a card that is already on the table.")
+                    new_card = input()
+                    if new_card == "pile":
+                        # take card from pile
+                        new_card = self.table.pickup_card_from_pile()
+                        # put card in player's hand
+                        player.pick(new_card)
+                        break
             
             # check that card is valid to pick up            
             def is_valid(subset_hand_objects):
@@ -147,10 +156,16 @@ class Rummy(object):
             for card in new_cards:
                 player.pick(card)
                 first_card = card
-                               
+                                           
             # sort new hand
             player.cards_in_hand = _sort_by(None, player.cards_in_hand, player.method)            
-        
+            
+            if type(player) == CPU:
+                is_valid_pick = True
+                if len(new_cards) > 1:
+                    must_put_down_points = True
+                return (is_valid_pick, must_put_down_points, first_card)
+            
             # check every combination of cards in the player's hand
             potential_hand = player.cards_in_hand
             if len(new_cards) == 1:
