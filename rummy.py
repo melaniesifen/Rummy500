@@ -1,10 +1,12 @@
 import random
 import itertools
 from copy import deepcopy
+import time
 from CommonFunctions import _sort_by, is_run, is_meld, str_to_card
 from card import Card
 from deck import Deck
 from player import Player
+from cpu import CPU
 from table import Table
     
 class Rummy(object):
@@ -22,9 +24,22 @@ class Rummy(object):
         
         # add players to game if there aren't any
         if self.round_number == 1:
-            for i in range(self.num_players):
+            if self.num_players == 0:
+                self.num_players == 2
+                cpu1 = CPU([], [], method = "suit")
+                self.players.append(cpu1)
+                cpu2 = CPU([], [], method = "suit")
+                self.players.append(cpu2)
+            if self.num_players == 1:
+                self.num_players = 2
                 player = Player([], [], method = "suit")
+                cpu = CPU([], [], method = "suit")
                 self.players.append(player)
+                self.players.append(cpu)
+            else:
+                for i in range(self.num_players):
+                    player = Player([], [], method = "suit")
+                    self.players.append(player)
         
         # deal the cards to the players
         for i in range(self.num_cards_in_hand):
@@ -33,7 +48,7 @@ class Rummy(object):
         
         # sort the hands of each player and print
         for i, player in enumerate(self.players):
-            if self.round_number == 1:
+            if self.round_number == 1 and type(player) == Player:
                 while True:
                     method = input("For player " + str(i + 1) + " sort hands by rank or suit? \n")
                     if method != "rank" and method != "suit":
@@ -61,14 +76,14 @@ class Rummy(object):
     def get_all_joint_runs(self):
         all_cards = deepcopy(self.all_tabled_cards)
         joint_runs = deepcopy(self.joint_runs)
-        cards_in_joint_runs = [card for card in joint_runs]
+        cards_in_joint_runs = [card for sublist in joint_runs for card in sublist]
         for player_cards in all_cards:
             for points in player_cards:
                 if is_run(points) and points not in joint_runs:
                     for card in points:
-                        if type(card) == Card:
-                            if card not in cards_in_joint_runs:
-                                joint_runs.append(points)                            
+                        if card not in cards_in_joint_runs:
+                            joint_runs.append(points)
+                            cards_in_joint_runs = [card for sublist in joint_runs for card in sublist]                         
         self.joint_runs = joint_runs
         return joint_runs
     
@@ -86,10 +101,21 @@ class Rummy(object):
         is_valid_pick = False
         must_put_down_points = False
         # pick card
-        pick_from = input("Pick from pile or pick from table? ")
-        while pick_from != "pile" and pick_from != "table":
-            print("Invalid entry. Please choose 'pile' or 'table'. \n")
-            pick_from = input()
+        if type(player) == Player:
+            pick_from = input("Pick from pile or pick from table? ")
+            while pick_from != "pile" and pick_from != "table":
+                print("Invalid entry. Please choose 'pile' or 'table'. \n")
+                pick_from = input()
+        else:
+            pick_from = player.pickup_strategy1(self.table.cards_on_table, self.all_melds, self.joint_runs)
+            if type(pick_from) == list:
+                best_cards = pick_from
+                for subset_cards in best_cards:
+                    for card in subset_cards:
+                        if card in self.table.cards_on_table:
+                            new_card = card
+                            break
+                pick_from = "table"
         
         if pick_from == "pile":
             # take card from table
@@ -102,24 +128,27 @@ class Rummy(object):
             return (is_valid_pick, must_put_down_points)
             
         elif pick_from == "table":
+            if type(player) == Player:
             # take card from table
-            new_card = input("Choose a card from the table to pick up. ")
-            cards_to_choose_from = [str(card) for card in self.table.cards_on_table]
-            while len(new_card) > 3: # multiple entries
-                print("Pick only one card. Any cards in front of that card will go into your hand.")
-                new_card = input()
-            while new_card not in cards_to_choose_from:
-                print("Invalid entry. You must choose a card that is already on the table.")
-                print("To pick from the pile instead, type: pile")
-                print("Otherwise, pick a card that is already on the table.")
-                new_card = input()
-                if new_card == "pile":
-                    # take card from pile
-                    new_card = self.table.pickup_card_from_pile()
-                     # put card in player's hand
-                    player.pick(new_card)
-                    break
-            
+                new_card = input("Choose a card from the table to pick up. ")
+                cards_to_choose_from = [str(card) for card in self.table.cards_on_table]
+                while len(new_card) > 3: # multiple entries
+                    print("Pick only one card. Any cards in front of that card will go into your hand.")
+                    new_card = input()
+                while new_card not in cards_to_choose_from:
+                    print("Invalid entry. You must choose a card that is already on the table.")
+                    print("To pick from the pile instead, type: pile")
+                    print("Otherwise, pick a card that is already on the table.")
+                    new_card = input()
+                    if new_card == "pile":
+                        # take card from pile
+                        new_card = self.table.pickup_card_from_pile()
+                        # put card in player's hand
+                        player.pick(new_card)
+                        break
+            else:
+                new_card 
+                
             # check that card is valid to pick up            
             def is_valid(subset_hand_objects):
                 if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
@@ -136,10 +165,16 @@ class Rummy(object):
             for card in new_cards:
                 player.pick(card)
                 first_card = card
-                               
+                                           
             # sort new hand
             player.cards_in_hand = _sort_by(None, player.cards_in_hand, player.method)            
-        
+            
+            if type(player) == CPU:
+                is_valid_pick = True
+                if len(new_cards) > 1:
+                    must_put_down_points = True
+                return (is_valid_pick, must_put_down_points, first_card)
+            
             # check every combination of cards in the player's hand
             potential_hand = player.cards_in_hand
             if len(new_cards) == 1:
@@ -192,12 +227,14 @@ class Rummy(object):
         
     def discard(self, player):
         # have players discard
-        card = input("Choose a card in your hand to discard. ")
-        cards_to_choose_from = [str(card) for card in player.cards_in_hand]
-        while card not in cards_to_choose_from:
-            print("Invalid entry. Please choose a card that is currently in your hand. \n")
-            card = input()
-            
+        if type(player) == Player:
+            card = input("Choose a card in your hand to discard. ")
+            cards_to_choose_from = [str(card) for card in player.cards_in_hand]
+            while card not in cards_to_choose_from:
+                print("Invalid entry. Please choose a card that is currently in your hand. \n")
+                card = input()
+        else:
+            card = player.discard_strategy1(self.table.cards_on_table)
         # add card to table
         self.table.place_card_on_table(card)
         
@@ -207,33 +244,43 @@ class Rummy(object):
         player.sort_by(player.cards_in_hand, player.method)
     
     
-    def table_cards(self, player, required_card):
-        cards = input("Choose cards to place on table for points. Separate by commas. ")
-        cards = cards.strip()
-        cards = cards.split(', ')
-        cards_to_choose_from = [str(card) for card in player.cards_in_hand]
-        # cards chosen must be in hand and must include required card if one exists
-        while (not set(cards).issubset(set(cards_to_choose_from))) or (required_card and str(required_card) not in cards):
-            if required_card and (str(required_card) not in cards):
-                print("You must use ", str(required_card), ". Try again \n")
-                cards = input()
-                continue
-            print("Invalid entry. Please choose cards that are currently in your hand. \n")
-            if not required_card:
-                print("If you don't have any cards to put down type 'no'.")
-            cards = input()
-            if cards == "no" and not required_card:
+    def table_cards(self, player, required_card, index):
+        if type(player) == CPU:
+            combinations = player.table_cards_strategy1()
+            if len(combinations) <= 0 or len(combinations) <= index:
                 return "no"
+            cards_objects = combinations[index]
+            cards_objects = [card for card in cards_objects] # tuple to list
+            cards = [str(card) for card in cards_objects]
+        else:
+            cards = input("Choose cards to place on table for points. Separate by commas. ")
             cards = cards.strip()
             cards = cards.split(', ')
+            cards_to_choose_from = [str(card) for card in player.cards_in_hand]
+            # cards chosen must be in hand and must include required card if one exists
+            while (not set(cards).issubset(set(cards_to_choose_from))) or (required_card and str(required_card) not in cards):
+                if required_card and (str(required_card) not in cards):
+                    print("You must use ", str(required_card), ". Try again \n")
+                    cards = input()
+                    continue
+                print("Invalid entry. Please choose cards that are currently in your hand. \n")
+                if not required_card:
+                    print("If you don't have any cards to put down type 'no'.")
+                cards = input()
+                if cards == "no" and not required_card:
+                    return "no"
+                cards = cards.strip()
+                cards = cards.split(', ')
         
-        # cards is list of str(cards), cards_objects is list of cards 
-        cards_objects = []
-        for card in cards:
-            card = str_to_card(card)
-            cards_objects.append(card)
+            # cards is list of str(cards), cards_objects is list of cards 
+            cards_objects = []
+            for card in cards:
+                card = str_to_card(card)
+                cards_objects.append(card)
          
-        def is_going_to_tabled_cards(subset_hand):    
+        def is_going_to_tabled_cards(subset_hand): 
+            if len(subset_hand) > 2:
+                return False
             # check every combination of cards on the table
             options = []
             potential_points = []
@@ -280,25 +327,29 @@ class Rummy(object):
                 options = check[0]
                 potential_points = check[1]
                 options_list_str = [[str(card) for card in sublist] for sublist in options]
-                if len(options_list_str) > 1:
-                    print("Options to add points to: ")
-                    for i, option in enumerate(options_list_str):
-                        print(i + 1, ": ", option)
-                    ask_again = True
-                    while ask_again:
-                        choice = input("Which set are you adding this point card to? Select the number. ")
-                        try:
-                            choice = int(choice)
-                            check_potential_points_range = potential_points[choice - 1]
-                            check_options_range = options[choice - 1]
-                            if choice == 0:
-                                print("Invalid seletion. Try again.")
-                            else:
-                                ask_again = False
-                        except:
-                            print("Select the number next to the option you would like to choose.")
+                if type(player) == Player:
+                    if len(options_list_str) > 1:
+                        print("Options to add points to: ")
+                        for i, option in enumerate(options_list_str):
+                            print(i + 1, ": ", option)
+                        ask_again = True
+                        while ask_again:
+                            choice = input("Which set are you adding this point card to? Select the number. ")
+                            try:
+                                choice = int(choice)
+                                check_potential_points_range = potential_points[choice - 1]
+                                check_options_range = options[choice - 1]
+                                if choice == 0:
+                                    print("Invalid seletion. Try again.")
+                                else:
+                                    ask_again = False
+                            except:
+                                print("Select the number next to the option you would like to choose.")
+                    else:
+                        choice = 1
                 else:
-                    choice = 1
+                    # strategy1
+                    choice = player.choose_cards_strategy1(potential_points)
                 # if run then add to all runs
                 if is_run(potential_points[choice - 1]):
                     self.joint_runs.remove(options[choice - 1])
@@ -328,11 +379,14 @@ class Rummy(object):
             return False
      
     def get_points(self, player, must_put_down_points, required_card):
-        if not must_put_down_points:
+        index = 0
+        if not must_put_down_points and type(player) == Player:
             ask = input("Do you want to put down point cards? ")
             while ask != "yes" and ask != "no":
                 print("Invalid entry. Please answer 'yes' or 'no'. \n")
                 ask = input()
+        elif type(player) == CPU:
+            ask = "yes" # strategy1
         else:
             ask = "yes"
             
@@ -340,29 +394,39 @@ class Rummy(object):
             multiple = True
             while multiple:
                 # table cards
-                cards_tabled = self.table_cards(player, required_card)
+                cards_tabled = self.table_cards(player, required_card, index)
                 if cards_tabled == True and player.win_round():
                     multiple = False
                     return True
                 if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
-                    ask = input("Invalid selection. Try again? ")
-                    while ask != "yes" and ask != "no":
-                        print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                        ask = input()
-                    if ask == "no":
-                        multiple = False
+                    if type(player) == CPU:
+                        index += 1
+                        ask = "yes" # strategy1
+                    else:
+                        ask = input("Invalid selection. Try again? ")
+                        while ask != "yes" and ask != "no":
+                            print("Invalid entry. Please answer 'yes' or 'no'. \n")
+                            ask = input()
+                        if ask == "no":
+                            multiple = False
                 elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
-                    print("Invalid selection. Try again.")
+                    if type(player) == Player:
+                        print("Invalid selection. Try again.")
+                    else:
+                        index += 1
                 elif cards_tabled == "no":
                     multiple = False
                 else:
                     required_card = None
-                    ask = input("Do you have another set of cards to put down for points? \n")
-                    while ask != "yes" and ask != "no":
-                        print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                        ask = input()
-                    if ask == "no":
-                        multiple = False
+                    if type(player) == Player:
+                        ask = input("Do you have another set of cards to put down for points? \n")
+                        while ask != "yes" and ask != "no":
+                            print("Invalid entry. Please answer 'yes' or 'no'. \n")
+                            ask = input()
+                        if ask == "no":
+                            multiple = False
+                    else:
+                        index += 1
         return False
          
  
@@ -468,7 +532,10 @@ class Rummy(object):
             num_players = self.num_players
             players = []
             for i, player in enumerate(self.players):
-                players.append(Player([], [], player.method, player.points))
+                if type(player) == Player:
+                    players.append(Player([], [], player.method, player.points))
+                else:
+                    players.append(CPU([], [], player.method, player.points))
             self = Rummy(num_players, players, self.round_number)
             self.play_to_win()
                 
@@ -478,7 +545,7 @@ class Rummy(object):
 def main():
     # prompt the user to enter the number of plaers
     num_players = int (input ('Enter number of players: '))
-    while ((num_players < 2) or (num_players > 4)):
+    while (num_players > 4 or num_players < 0):
         num_players = int (input ('Enter number of players: '))
 
     # create the Poker object
@@ -486,6 +553,8 @@ def main():
 
     # play the game
     game.play_to_win()
-
+    
+start_time = time.time()
 main()
+#print("--- %s seconds ---" % (time.time() - start_time))
 
