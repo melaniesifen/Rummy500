@@ -46,3 +46,109 @@ class Card(object):
 
     def __ge__(self, other):
         return self.rank >= other.rank
+    
+    def image_path(self):
+        if self.rank == 2:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/2_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/2_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/2_of_hearts.png"
+            return "images/PNG-cards-1.3/2_of_spades.png"
+        if self.rank == 3:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/3_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/3_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/3_of_hearts.png"
+            return "images/PNG-cards-1.3/3_of_spades.png"
+        if self.rank == 4:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/4_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/4_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/4_of_hearts.png"
+            return "images/PNG-cards-1.3/4_of_spades.png"
+        if self.rank == 5:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/5_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/5_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/5_of_hearts.png"
+            return "images/PNG-cards-1.3/5_of_spades.png"
+        if self.rank == 6:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/6_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/6_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/6_of_hearts.png"
+            return "images/PNG-cards-1.3/6_of_spades.png"
+        if self.rank == 7:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/7_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/7_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/7_of_hearts.png"
+            return "images/PNG-cards-1.3/7_of_spades.png"
+        if self.rank == 8:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/8_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/8_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/8_of_hearts.png"
+            return "images/PNG-cards-1.3/8_of_spades.png"
+        if self.rank == 9:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/9_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/9_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/9_of_hearts.png"
+            return "images/PNG-cards-1.3/9_of_spades.png"
+        if self.rank == 10:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/10_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/10_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/10_of_hearts.png"
+            return "images/PNG-cards-1.3/10_of_spades.png"
+        if self.rank == 11:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/jack_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/jack_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/jack_of_hearts.png"
+            return "images/PNG-cards-1.3/jack_of_spades.png"
+        if self.rank == 12:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/queen_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/queen_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/queen_of_hearts.png"
+            return "images/PNG-cards-1.3/queen_of_spades.png"
+        if self.rank == 13:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/king_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/king_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/king_of_hearts.png"
+            return "images/PNG-cards-1.3/king_of_spades.png"
+        if self.rank == 14:
+            if self.suit == "C":
+                return "images/PNG-cards-1.3/ace_of_clubs.png"
+            if self.suit == "D":
+                return "images/PNG-cards-1.3/ace_of_diamonds.png"
+            if self.suit == "H":
+                return "images/PNG-cards-1.3/ace_of_hearts.png"
+            return "images/PNG-cards-1.3/ace_of_spades.png"

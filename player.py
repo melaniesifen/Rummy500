@@ -22,8 +22,10 @@ class Player(object):
         self.method = method
         
     def get_cards_in_hand(self):
-        card_string = ' '.join(str(card) for card in self.cards_in_hand)
-        return "Hand : " + card_string
+        paths = []
+        for card in self.cards_in_hand:
+            paths.append(card.image_path())
+        return paths
     
     def get_cards_on_table(self):
         all_cards_on_table = []
