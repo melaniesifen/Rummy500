@@ -28,12 +28,12 @@ class Player(object):
         return paths
     
     def get_cards_on_table(self):
-        all_cards_on_table = []
-        for points in self.cards_on_table:
-            points_s = ', '.join(str(card) for card in points)
-            all_cards_on_table.append(points_s)
+        paths = []
+        for card_list in self.cards_on_table:
+            for card in card_list:
+                paths.append(card.small_image_path())
+        return paths
         
-        return "Point cards on table: " + ' | '.join(s for s in all_cards_on_table)
         
     def pick(self, card):
         self.cards_in_hand.append(card)

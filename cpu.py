@@ -47,7 +47,7 @@ class CPU(Player):
                         if points > high:
                             high = points
                             best = []
-                            best.apppend(meld)
+                            best.append(meld)
                         elif points == high:
                             best.append(meld)
                     meld.remove(card)
