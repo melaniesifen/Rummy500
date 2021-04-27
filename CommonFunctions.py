@@ -40,10 +40,12 @@ def _sort_by(self = None, hand = [], method = "suit"):
                 sorted_hand = [str(card) for card in sorted_hand]
             else:
                 sorted_hand = sorted(hand)
-        if self:
-            self.cards_in_hand = sorted_hand
+            if self:
+                self.cards_in_hand = sorted_hand
+                return
+            return sorted_hand 
         else:
-            return sorted_hand
+            return []
             
             
 

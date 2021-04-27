@@ -30,8 +30,10 @@ class Player(object):
     def get_cards_on_table(self):
         paths = []
         for card_list in self.cards_on_table:
+            path_list = []
             for card in card_list:
-                paths.append(card.small_image_path())
+                path_list.append(card.small_image_path())
+            paths.append(path_list)
         return paths
         
         
