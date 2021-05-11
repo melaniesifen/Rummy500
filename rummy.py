@@ -91,19 +91,20 @@ class Rummy(object):
                     player = Player([], [], method = "suit")
                     self.players.append(player)
         
-        # # deal the cards to the players
-        # for i in range(self.num_cards_in_hand):
-        #     for player in self.players:
-        #         player.cards_in_hand.append(self.deck.deal())
-        # for player in self.players:
-        #     player.sort_by(player.cards_in_hand, player.method)
+        # deal the cards to the players
+        for i in range(self.num_cards_in_hand):
+            for player in self.players:
+                player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
-            if type(player) == Player:
-                cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
-                player.cards_in_hand = cards
-            else:
-                cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
-                player.cards_in_hand = cards
+            player.sort_by(player.cards_in_hand, player.method)
+        # # test scenario
+        # for player in self.players:
+        #     if type(player) == Player:
+        #         cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
+        #         player.cards_in_hand = cards
+        #     else:
+        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
+        #         player.cards_in_hand = cards
         
         self.sort_method.configure(state = "normal")       
         self.back_card_labels = []     
@@ -437,13 +438,16 @@ class Rummy(object):
                                     count += 1
                                     break
                         self.show_options(options_dict, options, potential_points, cards_objects)
+                    else:
+                        choice = 1
+                        self.valid_table_cards(player, options, potential_points, cards_objects, choice)
+                        
             else:
                 choice = 1
                 self.valid_table_cards(player, None, None, cards_objects, choice)
                     
     def valid_table_cards(self, player, options, potential_points, cards_objects, choice = 1):
         if potential_points:
-            print("choice, type", choice, type(choice))
             # if run then add to all runs
             if is_run(potential_points[choice - 1]):
                 self.joint_runs.remove(options[choice - 1])
