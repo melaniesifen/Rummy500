@@ -321,7 +321,8 @@ class Rummy(object):
                 # turn on gc
                 self.select_button.place_forget()
                 self.discard_button.place_forget()
-                
+            else:
+                return    
             # card = input("Choose a card in your hand to discard. ")
             # cards_to_choose_from = [str(card) for card in player.cards_in_hand]
             # while card not in cards_to_choose_from:
