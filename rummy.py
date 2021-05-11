@@ -29,6 +29,7 @@ class Rummy(object):
         self.all_melds = []
         self.cards_on_table = []
         self.cards_on_table_labels = []
+        self.special_card_on_table = []
         
         self.player_frame = Frame(gui, width=1000, height=105)
         self.player_frame.pack(side="bottom", fill="x")
@@ -101,7 +102,7 @@ class Rummy(object):
                 cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
                 player.cards_in_hand = cards
             else:
-                cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S')]
+                cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
                 player.cards_in_hand = cards
         
         self.sort_method.configure(state = "normal")       
@@ -402,7 +403,7 @@ class Rummy(object):
                 options = valid_options[0]
                 potential_points = valid_options[1]
                 return (options, potential_points)
-            
+
         check = is_valid(cards, cards_objects)
         if check != False:
             if type(check) == tuple:
@@ -412,23 +413,7 @@ class Rummy(object):
                 options_list_str = [[str(card) for card in sublist] for sublist in options]
                 options_dict = OrderedDict()
                 count = 1
-                if type(player) == Player:
-                    if len(options_list_str) > 1:
-                        for i in range(len(path_options)):
-                            for j, widget in enumerate(self.points_frame.winfo_children()):
-                                if widget["text"] in path_options[i]:
-                                    options_dict[count] = [self.points_frame, path_options[i]]
-                                    count += 1
-                                    break
-                            for widget in self.other_frame.winfo_children():
-                                if widget["text"] in path_options[i]:
-                                    options_dict[count] = [self.other_frame, path_options[i]]
-                                    break
-                        self.show_options(options_dict)
-                        return
-                    else:
-                        choice = 1
-                else:
+                if type(player) == CPU:
                     # for debugging
                     if len(options_list_str) > 1:
                         print("Options to add points to: ")
@@ -437,41 +422,63 @@ class Rummy(object):
                     # strategy1
                     choice = player.choose_cards_strategy1(potential_points)
                     print("cpus's choice: ", choice)
-                # if run then add to all runs
-                if is_run(potential_points[choice - 1]):
-                    self.joint_runs.remove(options[choice - 1])
-                    self.joint_runs.append(potential_points[choice - 1])
-                # if meld then add to all melds
-                elif is_meld(potential_points[choice - 1]):
-                    self.all_melds.remove(options[choice - 1])
-                    self.all_melds.append(potential_points[choice - 1])
-            # place cards into player's cards on table
-            cards_to_keep = []
-            point_list = []
-            for card in cards_objects:
-                point_list.append(card)
-            # sort the cards before putting on table
-            point_list = sorted(point_list)
-            player.cards_on_table.append(point_list)
-            # remove cards from player's hand
-            for card in player.cards_in_hand:
-                if card not in cards_objects:
-                    cards_to_keep.append(card)
-            player.cards_in_hand = cards_to_keep
-            player.sort_by(player.cards_in_hand, player.method)
-            # Update all cards on table
-            self.set_all_tabled_cards()
-            # update cards in hand graphics
-            if type(player) == Player:
-                set_sorting_method(bn=[self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = False, player = player, button_label_both="button")
-                # update cards on table graphics
-                clear_frame(self.points_frame)
-                self.show_player_cards_on_table(player)
-            # check for winner
-            if len(player.cards_in_hand) == 0:
-                print("ROUND WINNER")
-            if self.is_game_winner():
-                print("GAME WINNER")
+                    self.valid_table_cards(player, options, potential_points, cards_objects, choice)   
+                elif type(player) == Player:
+                    if len(options) > 1:
+                        for i in range(len(path_options)):
+                            for j, widget in enumerate(self.points_frame.winfo_children()):
+                                if widget["text"] in path_options[i]:
+                                    options_dict[count] = [self.points_frame, options[i]]
+                                    count += 1
+                                    break
+                            for widget in self.other_frame.winfo_children():
+                                if widget["text"] in path_options[i]:
+                                    options_dict[count] = [self.other_frame, options[i]]
+                                    count += 1
+                                    break
+                        self.show_options(options_dict, options, potential_points, cards_objects)
+            else:
+                choice = 1
+                self.valid_table_cards(player, None, None, cards_objects, choice)
+                    
+    def valid_table_cards(self, player, options, potential_points, cards_objects, choice = 1):
+        if potential_points:
+            print("choice, type", choice, type(choice))
+            # if run then add to all runs
+            if is_run(potential_points[choice - 1]):
+                self.joint_runs.remove(options[choice - 1])
+                self.joint_runs.append(potential_points[choice - 1])
+            # if meld then add to all melds
+            elif is_meld(potential_points[choice - 1]):
+                self.all_melds.remove(options[choice - 1])
+                self.all_melds.append(potential_points[choice - 1])
+        # place cards into player's cards on table
+        cards_to_keep = []
+        point_list = []
+        for card in cards_objects:
+            point_list.append(card)
+        # sort the cards before putting on table
+        point_list = sorted(point_list)
+        player.cards_on_table.append(point_list)
+        # remove cards from player's hand
+        for card in player.cards_in_hand:
+            if card not in cards_objects:
+                cards_to_keep.append(card)
+        player.cards_in_hand = cards_to_keep
+        player.sort_by(player.cards_in_hand, player.method)
+        # Update all cards on table
+        self.set_all_tabled_cards()
+        # update cards in hand graphics
+        if type(player) == Player:
+            set_sorting_method(bn=[self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = False, player = player, button_label_both="button")
+            # update cards on table graphics
+            clear_frame(self.points_frame)
+            self.show_player_cards_on_table(player)
+        # check for winner
+        if len(player.cards_in_hand) == 0:
+            print("ROUND WINNER")
+        if self.is_game_winner():
+            print("GAME WINNER")
             return True
         else:
             return False
@@ -688,14 +695,15 @@ class Rummy(object):
         #       if no winners then do cpu turn
         #       check for winners
         #       if no winners then enable deck button and card buttons (rinse, wash, repeat)
-        
-        # card on table button:
-        # check if card is valid for pickup
-        # if valid for pickup then:
-        # disable deck button and repleace label
-        # disable cards on table buttons and replace labels
-        # enable cards in hand as buttons to put down points
-        # allow drag and drop
+        """
+        card on table button:
+        check if card is valid for pickup
+        if valid for pickup then:
+        disable deck button and repleace label
+        disable cards on table buttons and replace labels
+        enable cards in hand as buttons to put down points
+        allow drag and drop
+        """
         
         #   cards in hands button:
         #   have a select button appear
@@ -735,7 +743,7 @@ class Rummy(object):
                 path = paths[i][j]
                 card_image = PhotoImage(file=path)
                 card_image.image = card_image
-                x = (i + 1)/10 + (j + 1)/(num_cards * 12)
+                x = (i + 1)/8 + (j + 1)/(num_cards * 12)
                 label = Label(frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
                 label.place(relx=x, rely=y, anchor=CENTER)
                 
@@ -751,8 +759,16 @@ class Rummy(object):
             x = 0.2 + (i)/(len(paths) * 2)
             label = Label(self.player_frame, image=card_image, highlightthickness = 0, bd = 0)
             label.place(relx=x, rely=0.85, anchor=CENTER)
-            
-    def show_options(self, options_dict):
+    
+    def return_option(self, options, potential_points, cards_objects, option_number):
+        print("option_number: ", option_number)
+        for bn in self.option_buttons:
+            bn.destroy()
+        self.valid_table_cards(self.players[0], options, potential_points, cards_objects, option_number)
+        
+    def show_options(self, options_dict, options, potential_points, cards_objects):
+        self.option_buttons = []
+        option_number = 1
         points_frame_options = []
         for count, frame_cards in options_dict.items():
             if frame_cards[0] == self.points_frame:
@@ -763,45 +779,67 @@ class Rummy(object):
             paths = player.get_cards_on_table() # list of image paths
             num_cards = sum(len(path_list) for path_list in paths)
             y = 0.45
-            for i, card_list in enumerate(player.cards_on_table):
+            cards_on_table = deepcopy(player.cards_on_table)
+            for i, card_list in enumerate(cards_on_table):
                 if card_list in points_frame_options:
-                    count = points_frame_options.index(card_list)
-                    option_button = Button(self.points_frame, text=str(count), highlightbackground = "red4", bg="red2", font=("Courier", 8), bd=4)
-                    x = i/10 + (j + 1)/(num_cards * 12)
-                    option_button.place(relx=x, rely=y, anchor=CENTER)
+                    option_button = Button(self.points_frame, text=str(option_number), highlightbackground = "red4", bg="red2", font=("Courier", 8), bd=4)
+                    self.option_buttons.append(option_button)
+                    card_list.insert(0, option_button)
+                    option_number += 1
+                change_index = False
                 for j, card in enumerate(card_list):
-                    path = paths[i][j]
-                    card_image = PhotoImage(file=path)
-                    card_image.image = card_image
-                    x = (i + 1)/10 + (j + 1)/(num_cards * 12)
-                    label = Label(self.points_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
-                    label.place(relx=x, rely=y, anchor=CENTER)
+                    if type(card_list[j]) == Card:
+                        if change_index:
+                            j-=1
+                        path = paths[i][j]
+                        card_image = PhotoImage(file=path)
+                        card_image.image = card_image
+                        x = (i + 1)/10 + (j + 1)/(num_cards * 12)
+                        label = Label(self.points_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
+                        label.place(relx=x, rely=y, anchor=CENTER)
+                    else:
+                        x = ((i + 1)/10 + (j + 1)/(num_cards * 12)) - 0.05
+                        card_list[j].place(relx=x, rely=y, anchor=CENTER)
+                        change_index = True
+                    
                     
         other_frame_options = []
         for count, frame_cards in options_dict.items():
             if frame_cards[0] == self.other_frame:
                 other_frame_options.append(frame_cards[1])
         if other_frame_options:
-            keep = self.back_card_labels + self.deck_button + self.deck_label
+            keep = self.back_card_labels + [self.deck_button] + [self.deck_label]
             clear_frame(self.other_frame, keep)
             player = self.players[1]
             paths = player.get_cards_on_table() # list of image paths
             num_cards = sum(len(path_list) for path_list in paths)
             y = 0.5
-            for i, card_list in enumerate(player.cards_on_table):
+            cards_on_table = deepcopy(player.cards_on_table)
+            for i, card_list in enumerate(cards_on_table):
                 if card_list in other_frame_options:
-                    count = other_frame_options.index(card_list)
-                    option_button = Button(self.other_frame, text=str(count), highlightbackground = "red4", bg="red2", font=("Courier", 8), bd=4)
-                    x = i/10 + (j + 1)/(num_cards * 12)
-                    option_button.place(relx=x, rely=y, anchor=CENTER)
+                    option_button = Button(self.other_frame, text=str(option_number), highlightbackground = "red4", bg="red2", font=("Courier", 8), bd=4)
+                    self.option_buttons.append(option_button)
+                    card_list.insert(0, option_button)
+                    option_number += 1
+                change_index = False
                 for j, card in enumerate(card_list):
-                    path = paths[i][j]
-                    card_image = PhotoImage(file=path)
-                    card_image.image = card_image
-                    x = (i + 1)/10 + (j + 1)/(num_cards * 12)
-                    label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
-                    label.place(relx=x, rely=y, anchor=CENTER)
-                    
+                    if type(card_list[j]) == Card:
+                        if change_index:
+                            j -= 1
+                        path = paths[i][j]
+                        card_image = PhotoImage(file=path)
+                        card_image.image = card_image
+                        x = (i + 1)/5 + (j + 1)/(num_cards * 12)
+                        label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
+                        label.place(relx=x, rely=y, anchor=CENTER)
+                    else:
+                        x = ((i + 1)/5 + (j + 1)/(num_cards * 12)) - 0.05
+                        card_list[j].place(relx=x, rely=y, anchor=CENTER)
+                        change_index = True
+                        
+            for i, bn in enumerate(self.option_buttons):
+                bn.configure(command=lambda:self.return_option(options, potential_points, cards_objects, i+1))
+            print("how many options: ", option_number)    
             # show card on table
             paths = self.table.get_cards_on_table()
             for i, card in enumerate(self.table.cards_on_table):
