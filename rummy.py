@@ -788,12 +788,13 @@ class Rummy(object):
                 label.place(relx=x, rely=0.85, anchor=CENTER)
         
     def return_option(self, options, potential_points, cards_objects, option_number):
-        for bn in self.option_buttons:
+        for bn in option_buttons:
             bn.destroy()
         self.valid_table_cards(self.players[0], options, potential_points, cards_objects, option_number)
         
     def show_options(self, options_dict, options, potential_points, cards_objects):
-        self.option_buttons = []
+        global option_buttons
+        option_buttons = []
         option_number = 1
         points_frame_options = []
         for count, frame_cards in options_dict.items():
@@ -809,7 +810,7 @@ class Rummy(object):
             for i, card_list in enumerate(cards_on_table):
                 if card_list in points_frame_options:
                     option_button = Button(self.points_frame, text=str(option_number), highlightbackground = "red4", bg="red2", font=("Courier", 8), bd=4)
-                    self.option_buttons.append(option_button)
+                    option_buttons.append(option_button)
                     card_list.insert(0, option_button)
                     option_number += 1
                 change_index = False
@@ -844,7 +845,7 @@ class Rummy(object):
             for i, card_list in enumerate(cards_on_table):
                 if card_list in other_frame_options:
                     option_button = Button(self.other_frame, text=str(option_number), highlightbackground = "red4", bg="red2", font=("Courier", 8), bd=4)
-                    self.option_buttons.append(option_button)
+                    option_buttons.append(option_button)
                     card_list.insert(0, option_button)
                     option_number += 1
                 change_index = False
@@ -863,8 +864,8 @@ class Rummy(object):
                         card_list[j].place(relx=x, rely=y, anchor=CENTER)
                         change_index = True
                         
-            for i, bn in enumerate(self.option_buttons):
-                bn.configure(command=lambda:self.return_option(options, potential_points, cards_objects, i+1))  
+            for i, bn in enumerate(option_buttons):
+                bn.configure(command=lambda i = i:self.return_option(options, potential_points, cards_objects, i+1))  
             # show card on table
             paths = self.table.get_cards_on_table()
             for i, card in enumerate(self.table.cards_on_table):
