@@ -260,7 +260,6 @@ class Card(object):
             return "images/PNG-cards-1.3/ace_of_spades (Custom).png"
         
     def path_to_card(self, path):
-        path = path[21:-4]
         if path[0] == "a":
             self.rank = 14
         elif path[0] == "k":
@@ -281,6 +280,7 @@ class Card(object):
             self.suit = "D"
         else:
             self.suit = "C"
-        self = (self.rank, self.suit)
+        card = Card(self.rank, self.suit)
+        return card
         
         

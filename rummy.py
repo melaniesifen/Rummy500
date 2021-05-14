@@ -52,7 +52,7 @@ class Rummy(object):
         self.deck_button = Button(self.other_frame, image=self.deck_image, state="disable", highlightthickness = 0, bd = 0,\
             command=lambda:[self.deck_button.configure(state="disable"), \
             self.deck_label.place(relx=0.1, rely=0.83, anchor=CENTER), \
-            self.change_state_on_table(), \
+            self.change_state_on_table(first_card = True), \
             self.sort_method.configure(command = lambda:set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = True, player = self.players[0], button_label_both="button")), \
             self.pickup(self.players[0], "pile"), \
             self.change_state_in_hand(), \
@@ -119,7 +119,9 @@ class Rummy(object):
                     label = Label(self.other_frame, image=self.back_card, highlightbackground = "black")
                     self.back_card_labels.append(label)
                     label.place(relx=x, rely=0.2, anchor=CENTER)
-                    
+        
+        self.selected_table_card = None
+          
         # show first card of the deck  
         self.table = Table(self.deck, [])
         first_card = self.table.cards_in_pile.deal()
@@ -129,7 +131,20 @@ class Rummy(object):
             path = paths[i]
             card_image = PhotoImage(file=path)
             card_image.image = card_image
-            first_card_button = Button(self.other_frame, image=card_image, highlightthickness = 0, bd = 0)
+            first_card_button = Button(self.other_frame, image=card_image, highlightthickness = 0, bd = 0, state="disable",\
+                command=lambda:[self.deck_button.configure(state="disable"), \
+                self.deck_label.place(relx=0.1, rely=0.83, anchor=CENTER), \
+                self.change_state_on_table(), \
+                first_card_button.destroy(), \
+                self.sort_method.configure(command = lambda:set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = True, player = self.players[0], button_label_both="button")), \
+                set_selected_table_card(self, first_card), \
+                self.pickup(self.players[0], "table"), \
+                self.change_state_in_hand(), \
+                self.select_button.place(relx=0.0251, rely=0.05), \
+                self.discard_button.place(relx=0.105, rely=0.05), \
+                set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = False, player = self.players[0], button_label_both="button"), \
+                self.select_button.configure(state = "normal"), \
+                self.discard_button.configure(state="normal")])
             first_card_button.place(relx=0.2, rely=0.85, anchor=CENTER)
             
     def get_all_tabled_cards(self):
@@ -178,7 +193,6 @@ class Rummy(object):
                             new_card = card
                             break
                 try:
-                    print(new_card)
                     pick_from = "table"
                 except:
                     pick_from = "pile"
@@ -186,8 +200,6 @@ class Rummy(object):
         if pick_from == "pile":
             # take card from table
             new_card = self.table.pickup_card_from_pile()
-            if type(player) == CPU:
-                print("new card pickup pile: ", new_card)
             # put card in player's hand
             player.pick(new_card)
             # sort new hand
@@ -198,15 +210,17 @@ class Rummy(object):
             return (is_valid_pick, must_put_down_points)
             
         elif pick_from == "table":
-                
             # check that card is valid to pick up            
             def is_valid(subset_hand_objects):
                 if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
                     return True
                 return False
 
-            # take cards from table
-            new_card = str_to_card(new_card)
+            if type(player) == Player:
+                # take cards from table
+                new_card = self.selected_table_card
+            else:
+                new_card = str_to_card(new_card)
             # take cards off the table
             old_cards = deepcopy(self.table.cards_on_table)
             new_cards = self.table.pickup_cards_on_table(new_card)
@@ -232,7 +246,7 @@ class Rummy(object):
                 player.cards_in_hand = potential_hand
                 player.sort_by(player.cards_in_hand, player.method)
                 set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
-                return
+                return True
 
             for L in range(0, len(potential_hand) + 1):
                 for subset_hand in itertools.combinations(potential_hand, L):
@@ -243,7 +257,7 @@ class Rummy(object):
                             player.sort_by(player.cards_in_hand, player.method)
                             must_put_down_points = True
                             set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
-                            return
+                            return True
                     
             if not is_valid_pick:     
                 # check every combination of cards on the table
@@ -268,23 +282,14 @@ class Rummy(object):
                 self.table.cards_on_table = old_cards
                 # remove cards from hand
                 player.cards_in_hand = old_hand
+                return False
             else:
                 must_put_down_points = True
                 # sort new hand
                 player.cards_in_hand = potential_hand
                 player.sort_by(player.cards_in_hand, player.method)
                 set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
-                return
-    
-    def check_to_enable_discard(self):
-        cards_objects = []
-        for i, bn in enumerate(button_list):
-            if bn["bd"] == 4:
-                card = player.cards_in_hand[i]
-                cards_objects.append(card)
-        
-        if len(cards_objects) == 1:
-            self.discard_button.configure(state="normal")
+                return True
           
     def discard(self, player):
         # have players discard
@@ -416,14 +421,8 @@ class Rummy(object):
                 options_dict = OrderedDict()
                 count = 1
                 if type(player) == CPU:
-                    # for debugging
-                    if len(options_list_str) > 1:
-                        print("Options to add points to: ")
-                        for i, option in enumerate(options_list_str):
-                            print(i + 1, ": ", option)
                     # strategy1
                     choice = player.choose_cards_strategy1(potential_points)
-                    print("cpus's choice: ", choice)
                     self.valid_table_cards(player, options, potential_points, cards_objects, choice)   
                 elif type(player) == Player:
                     if len(options) > 1:
@@ -589,7 +588,7 @@ class Rummy(object):
             self.back_card_labels.append(label)
             label.place(relx=x, rely=0.2, anchor=CENTER) 
             
-         # show point cards on table
+        # show point cards on table
         self.show_player_cards_on_table(player)
         
         # set up player's turn
@@ -597,7 +596,41 @@ class Rummy(object):
         self.deck_button.place(relx=0.1, rely=0.83, anchor=CENTER)
         self.deck_label.place_forget()
         
+        paths = self.table.get_cards_on_table() 
+        
+        global card_buttons
+        card_buttons = [] 
+        for i, card in enumerate(self.table.cards_on_table):
+            path = paths[i]
+            card_image = PhotoImage(file=path)
+            card_image.image = card_image
+            card_button = Button(self.other_frame, image=card_image, text=str(card), highlightthickness = 0, bd = 0, state="disable", command=lambda i = i:config_border_and_pickup(i, self))
+            x = 0.2 + i/35
+            card_buttons.append(card_button)
+            card_button.place(relx=x, rely=0.85, anchor=CENTER)
+            
+            for bn in card_buttons:
+                bn.configure(state="normal")
+            
+        
+        
+    
+    def forget_table_cards(self):
+        for widget in self.other_frame.winfo_children():
+            if type(widget).__name__ == "Button" and widget["state"] == "disable":
+                widget.place_forget()
+        #self.show_table_cards_on_table()
                 
+    def show_table_cards_on_table(self):
+        paths = self.table.get_cards_on_table() # list of image paths
+        for i, card in enumerate(self.table.cards_on_table):
+            path = paths[i]
+            card_image = PhotoImage(file=path)
+            card_image.image = card_image
+            x = 0.2 + i/35
+            label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0)
+            label.place(relx=x, rely=0.85, anchor=CENTER)
+                            
     def get_all_points(self):
         player_points = {}
         for i, player in enumerate(self.players):
@@ -663,52 +696,21 @@ class Rummy(object):
             
             
     def events(self):
-        """
-        # current:
-        # deck disabled with label on top
-        # cards in hand disabled with label on top
-        # cards on table disabled with label on top
-        
-        # player picks card:
-        # only enable deck button and cards on table
-        """
         keep = self.back_card_labels
         for widget in self.other_frame.winfo_children():
             if type(widget).__name__ == "Button":
                 keep.append(widget)
                 widget.configure(state = "normal")
         clear_frame(self.other_frame, keep = keep)
-        """
-        # deck button:
-        # disable deck button and replace label
-        # disable cards on table buttons and replace labels
-        # put card in hand
-        # enable cards in hand as buttons to put down points
-        """
-        #   cards in hands button:
-        #   have a select button appear
         
-        #       select (point down points?) button:
-        #       trigger to check which cards and see if valid placement
-        #       if cards are valid then place on point space, else pop up invalid selection     
-
-        #       drag card to table to discard
-        #       forget select button
-        #       disable cards in hand buttons
-        #       replace labels
-        #       check for winners
-        #       if no winners then do cpu turn
-        #       check for winners
-        #       if no winners then enable deck button and card buttons (rinse, wash, repeat)
-        """
-        card on table button:
-        check if card is valid for pickup
-        if valid for pickup then:
-        disable deck button and repleace label
-        disable cards on table buttons and replace labels
-        enable cards in hand as buttons to put down points
-        allow drag and drop
-        """
+        # card on table button:
+        # check if card is valid for pickup
+        # if valid for pickup then:
+        # disable deck button and repleace label
+        # disable cards on table buttons and replace labels
+        # enable cards in hand as buttons to put down points
+        # allow drag and drop
+        
         
         #   cards in hands button:
         #   have a select button appear
@@ -752,10 +754,10 @@ class Rummy(object):
                 label = Label(frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
                 label.place(relx=x, rely=y, anchor=CENTER)
                 
-    def change_state_on_table(self):
+    def change_state_on_table(self, reset_cards_on_table = False, first_card = False):
         for widget in self.other_frame.winfo_children():
             if type(widget).__name__ == "Button":
-                widget.configure(command=None)
+                widget.place_forget()
         paths = self.table.get_cards_on_table() # list of image paths
         for i, card in enumerate(self.table.cards_on_table):
             path = paths[i]
@@ -764,9 +766,28 @@ class Rummy(object):
             x = 0.2 + (i)/(len(paths) * 2)
             label = Label(self.player_frame, image=card_image, highlightthickness = 0, bd = 0)
             label.place(relx=x, rely=0.85, anchor=CENTER)
-    
+        if reset_cards_on_table:
+            # cpu
+            keep = self.back_card_labels + [self.deck_button] + [self.deck_label]
+            clear_frame(self.other_frame, keep)
+            player = self.players[1]
+            self.show_player_cards_on_table(player)
+            
+            # player
+            keep = [self.select_button] + [self.discard_button] + [self.sort_method]
+            clear_frame(self.player_frame, keep)
+            player = self.players[0]
+            #self.show_player_cards_on_table(player)
+        if first_card:
+            for i, card in enumerate(self.table.cards_on_table):
+                path = paths[i]
+                card_image = PhotoImage(file=path)
+                card_image.image = card_image
+                x = 0.2 + i/35
+                label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0)
+                label.place(relx=x, rely=0.85, anchor=CENTER)
+        
     def return_option(self, options, potential_points, cards_objects, option_number):
-        print("option_number: ", option_number)
         for bn in self.option_buttons:
             bn.destroy()
         self.valid_table_cards(self.players[0], options, potential_points, cards_objects, option_number)
@@ -843,8 +864,7 @@ class Rummy(object):
                         change_index = True
                         
             for i, bn in enumerate(self.option_buttons):
-                bn.configure(command=lambda:self.return_option(options, potential_points, cards_objects, i+1))
-            print("how many options: ", option_number)    
+                bn.configure(command=lambda:self.return_option(options, potential_points, cards_objects, i+1))  
             # show card on table
             paths = self.table.get_cards_on_table()
             for i, card in enumerate(self.table.cards_on_table):
@@ -879,10 +899,6 @@ def clear_frame(frame, keep = []):
             continue
         widget.place_forget()
 
-
-    # replace sorting_method button
-    
-
 def set_sorting_method(bn, frame, clicked, player = None, button_label_both = "both"):
     gc.disable()
     sort_method = bn[0]
@@ -916,6 +932,10 @@ def set_sorting_method(bn, frame, clicked, player = None, button_label_both = "b
             button = Button(frame, image=card_image, highlightthickness = 0, bd = 0, state="disable").place(relx=x, rely=0.5, anchor=CENTER)
             label = Label(frame, image=card_image, highlightthickness = 0, bd = 0).place(relx=x, rely=0.5, anchor=CENTER)
     #gc.enable()
+    
+def set_selected_table_card(self, card):
+    self.selected_table_card = card
+        
              
 def config_border(i):
     bn = button_list[i]
@@ -923,6 +943,26 @@ def config_border(i):
         bn.configure(bd=4)
     else:
         bn.configure(bd=0)
+    
+def config_border_and_pickup(i, self):
+    selected = card_buttons[i]
+    selected.configure(bd=4)
+        
+    self.deck_button.configure(state="disable")
+    self.deck_label.place(relx=0.1, rely=0.83, anchor=CENTER)
+    self.sort_method.configure(command = lambda:set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = True, player = self.players[0], button_label_both="button"))
+    set_selected_table_card(self, str_to_card(selected["text"]))
+    valid_pickup = self.pickup(self.players[0], "table")
+    if valid_pickup:
+        self.change_state_on_table(reset_cards_on_table = True, first_card = True)
+        self.change_state_in_hand()
+        self.select_button.place(relx=0.0251, rely=0.05)
+        self.discard_button.place(relx=0.105, rely=0.05)
+        set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = False, player = self.players[0], button_label_both="button")
+        self.select_button.configure(state = "normal")
+        self.discard_button.configure(state="normal")
+    else:
+        return
                            
 def make_draggable(frame):
     for widget in frame.winfo_children():
