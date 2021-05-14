@@ -40,10 +40,12 @@ def _sort_by(self = None, hand = [], method = "suit"):
                 sorted_hand = [str(card) for card in sorted_hand]
             else:
                 sorted_hand = sorted(hand)
-        if self:
-            self.cards_in_hand = sorted_hand
+            if self:
+                self.cards_in_hand = sorted_hand
+                return
+            return sorted_hand 
         else:
-            return sorted_hand
+            return []
             
             
 
@@ -61,14 +63,15 @@ def is_run(subset_hand):
     rank_order = True
     for i in range(len(subset_hand) - 1):
         if subset_hand[i].rank == 14:
-            rank_order = False
-        if subset_hand[i + 1].rank == 14:
-            if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)) == False:
-                if (rank_order and (subset_hand[0].rank == 2)) == False:
-                    rank_order = False
-        rank_order = rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)
-    if not rank_order:
-        return False
+            return False
+        if (subset_hand[i].rank == subset_hand[i + 1].rank - 1) or (subset_hand[i + 1].rank == 14):
+            if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)):
+                continue
+            if (rank_order and (subset_hand[0].rank == 2)):
+                continue
+            return False
+        else:
+            return False
     return True
 
 def is_meld(subset_hand):

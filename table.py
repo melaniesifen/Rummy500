@@ -6,8 +6,6 @@ class Table(object):
     def __init__(self, cards_in_pile, cards_on_table):
         self.cards_in_pile = cards_in_pile
         self.cards_on_table = []
-        first_card = self.cards_in_pile.deal()
-        self.cards_on_table.append(first_card)
         
     def place_card_on_table(self, card):
         if type(card) == str:
@@ -55,3 +53,9 @@ class Table(object):
     def __str__(self):
         cards_on_table = ' '.join(str(card) for card in self.cards_on_table)
         return "Cards on table: " + cards_on_table
+    
+    def get_cards_on_table(self):
+        paths = []
+        for card in self.cards_on_table:
+            paths.append(card.image_path())
+        return paths
