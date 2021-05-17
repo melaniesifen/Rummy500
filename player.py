@@ -9,7 +9,7 @@ class Player(object):
         self.method = method
         self.points = points
         self.winner = False
-        
+     
     def set_winner(self):
         # switch
         winner = self.winner

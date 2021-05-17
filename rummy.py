@@ -17,7 +17,7 @@ from table import Table
 
 class Rummy(object):
     # constructor
-    def __init__(self, num_players = 2, players = [], round_number = 1, round_points_list = [("You", "CPU")]):
+    def __init__(self, num_players = 2, players = [], round_number = 1, round_points_list = [(" ", "You", "CPU")]):
         self.deck = Deck()
         self.deck.shuffle()
         self.num_players = num_players
@@ -221,7 +221,11 @@ class Rummy(object):
                 # take cards from table
                 new_card = self.selected_table_card
             else:
-                new_card = str_to_card(new_card)
+                try:
+                    new_card = str_to_card(new_card)
+                except:
+                    self.pickup(player, pick_from="pile")
+                    return
             # take cards off the table
             old_cards = deepcopy(self.table.cards_on_table)
             new_cards = self.table.pickup_cards_on_table(new_card)
@@ -332,18 +336,18 @@ class Rummy(object):
             
             # check winner
             if player.game_winner():
-                print("game winner at discard")
+                self.game_over()
             elif player.round_winner():
-                
                 destroy_frame(self.player_frame)
                 destroy_frame(self.other_frame)
                 destroy_frame(self.points_frame)
                 
-                self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                self.round_points_list.append((" ", self.players[0].end_points(), self.players[1].end_points()))
+                self.round_points_list.append(("Total: ", self.players[0].points, self.players[1].points))
                 last_pos = [0, 0]
                 # code for creating table
-                for i in range(self.round_number + 1):
-                    for j in range(len(self.players)):
+                for i in range(self.round_number + 2):
+                    for j in range(len(self.players) + 1):
                         e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
                         x = j/10 + 0.4
                         y = i/25 + 0.5
@@ -496,27 +500,28 @@ class Rummy(object):
             self.show_player_cards_on_table(player)
         # check for winner
         if player.game_winner():
-            # TODO: Display winner screen
-            print("game winner table cards!")
+            self.game_over()
         elif player.round_winner():
-                destroy_frame(self.player_frame)
-                destroy_frame(self.other_frame)
-                destroy_frame(self.points_frame)
-                
-                self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
-                last_pos = [0, 0]
-                # code for creating table
-                for i in range(self.round_number + 1):
-                    for j in range(len(self.players)):
-                        e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
-                        x = j/10 + 0.4
-                        y = i/25 + 0.5
-                        e.place(relx=x, rely=y, anchor=CENTER)
-                        e.insert(END, self.round_points_list[i][j])
-                        last_pos = [x, y]
-                       
-                next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
-                next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
+            destroy_frame(self.player_frame)
+            destroy_frame(self.other_frame)
+            destroy_frame(self.points_frame)
+            
+            self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+            self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
+            last_pos = [0, 0]
+            # code for creating table
+            for i in range(self.round_number + 2):
+                for j in range(len(self.players) + 1):
+                    e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
+                    x = j/10 + 0.4
+                    y = i/25 + 0.5
+                    e.place(relx=x, rely=y, anchor=CENTER)
+                    e.insert(END, self.round_points_list[i][j])
+                    last_pos = [x, y]
+                    
+            next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
+            next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
+            return True
         else:
             return False
      
@@ -564,17 +569,18 @@ class Rummy(object):
         is_winner = self.get_points(player, must_put_down_points, required_card)
         if is_winner:
             if player.game_winner():
-                print("CPU game winner cpu play get points!")
+                self.game_over()
             else:
                 destroy_frame(self.player_frame)
                 destroy_frame(self.other_frame)
                 destroy_frame(self.points_frame)
                 
-                self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
                 last_pos = [0, 0]
                 # code for creating table
-                for i in range(self.round_number + 1):
-                    for j in range(len(self.players)):
+                for i in range(self.round_number + 2):
+                    for j in range(len(self.players) + 1):
                         e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
                         x = j/10 + 0.4
                         y = i/25 + 0.5
@@ -589,25 +595,25 @@ class Rummy(object):
         # discard
         self.discard(player)  
         if player.game_winner():
-            # TODO: Display screen for winner
-            print("CPU game winner cpu play discard!")
+            self.game_over()
         if player.round_winner():
             destroy_frame(self.player_frame)
             destroy_frame(self.other_frame)
             destroy_frame(self.points_frame)
             
-            self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+            self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+            self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
             last_pos = [0, 0]
             # code for creating table
-            for i in range(self.round_number + 1):
-                for j in range(len(self.players)):
+            for i in range(self.round_number + 2):
+                for j in range(len(self.players) + 1):
                     e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
                     x = j/10 + 0.4
                     y = i/25 + 0.5
                     e.place(relx=x, rely=y, anchor=CENTER)
                     e.insert(END, self.round_points_list[i][j])
                     last_pos = [x, y]
-                    
+                
             next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
             next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
             return
@@ -674,7 +680,8 @@ class Rummy(object):
                 players.append(Player([], [], p.method, p.end_points()))
             else:
                 players.append(CPU([], [], p.method, p.end_points()))
-                
+        
+        clear_frame(gui)        
         self = Rummy(self.num_players, players, self.round_number)
         self.events()
         
@@ -699,7 +706,10 @@ class Rummy(object):
                 path = paths[i][j]
                 card_image = PhotoImage(file=path)
                 card_image.image = card_image
-                x = (i + 1)/10 + (j + 1)/(num_cards * 12)
+                if num_cards >= 8:
+                    x = (i + 1)/12 + j/(num_cards * 12)
+                else:
+                    x = (i + 1)/10 + j/(num_cards * 12)
                 label = Label(frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
                 label.place(relx=x, rely=y, anchor=CENTER)
                 
@@ -738,6 +748,7 @@ class Rummy(object):
         
     def return_option(self, options, potential_points, cards_objects, option_number):
         for bn in option_buttons:
+            print("option button: ", bn["text"])
             bn.destroy()
         self.valid_table_cards(self.players[0], options, potential_points, cards_objects, option_number)
         
@@ -774,7 +785,7 @@ class Rummy(object):
                         label = Label(self.points_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
                         label.place(relx=x, rely=y, anchor=CENTER)
                     else:
-                        x = ((i + 1)/10 + (j + 1)/(num_cards * 12)) - 0.05
+                        x = ((i + 1)/10 + (j + 1)/(num_cards * 12)) - 0.03
                         card_list[j].place(relx=x, rely=y, anchor=CENTER)
                         change_index = True
                         
@@ -808,7 +819,10 @@ class Rummy(object):
                         label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
                         label.place(relx=x, rely=y, anchor=CENTER)
                     else:
-                        x = ((i + 1)/10 + (j + 1)/(num_cards * 12)) - 0.05
+                        if num_cards >= 8:
+                            x = (i + 1)/12 + j/(num_cards * 12) - 0.03
+                        else:
+                            x = ((i + 1)/10 + j/(num_cards * 12)) - 0.03
                         card_list[j].place(relx=x, rely=y, anchor=CENTER)
                         change_index = True
                         
@@ -823,7 +837,28 @@ class Rummy(object):
                 x = 0.2 + i/35
                 label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0)
                 label.place(relx=x, rely=0.85, anchor=CENTER)
-                    
+                
+    def game_over(self):
+        p1 = self.players[0].points
+        p2 = self.players[1].points
+        if p1 == p2:
+            # tie screen
+            gui.configure(bg='Black')
+            tie = Label(gui, text="Tie", font=("Courier", 40))
+            tie.place(relx=0.4, rely=0.5, anchor=CENTER)
+        elif p1 > p2:
+            # you win
+            gui.configure(bg='Black')
+            gui.configure(bg='Black')
+            win = Label(gui, text="You \n Win!", font=("Courier", 40))
+            win.place(relx=0.4, rely=0.5, anchor=CENTER)
+        else:
+            # you lose
+            gui.configure(bg='Black')
+            gui.configure(bg='Black')
+            lose = Label(gui, text="You \n Lose", font=("Courier", 40))
+            lose.place(relx=0.4, rely=0.5, anchor=CENTER)
+                
 
 def create_cpu_game(num_players):
     tkinter.messagebox.showinfo("", "This feature is not yet available")
@@ -915,7 +950,7 @@ def config_border_and_pickup(i, self):
 
 def main():
     global gui
-    gui = Tk(className='Python Examples - Window Size')# set window size and color
+    gui = Tk(className='Rummy - Window Size')# set window size and color
     gui.bind('<Escape>', lambda event: gui.state('normal'))
     gui.bind('<F11>', lambda event: gui.state('zoomed'))
     gui.configure(bg='SpringGreen3')
