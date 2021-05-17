@@ -60,10 +60,16 @@ class Player(object):
         if self.winner:
             new_points += 25 # 25 points for winning the round
         self.points += new_points
-        return self.points
+        return new_points
     
-    def win_round(self):
+    def round_winner(self):
         if len(self.cards_in_hand) == 0:
+            self.winner = True
+            return True
+        return False
+    
+    def game_winner(self):
+        if self.points >= 500:
             return True
         return False
     

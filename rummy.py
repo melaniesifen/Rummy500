@@ -17,7 +17,7 @@ from table import Table
 
 class Rummy(object):
     # constructor
-    def __init__(self, num_players = 2, players = [], round_number = 1):
+    def __init__(self, num_players = 2, players = [], round_number = 1, round_points_list = [("You", "CPU")]):
         self.deck = Deck()
         self.deck.shuffle()
         self.num_players = num_players
@@ -30,6 +30,7 @@ class Rummy(object):
         self.cards_on_table = []
         self.cards_on_table_labels = []
         self.special_card_on_table = []
+        self.round_points_list = round_points_list
         
         self.player_frame = Frame(gui, width=1000, height=105)
         self.player_frame.pack(side="bottom", fill="x")
@@ -91,20 +92,20 @@ class Rummy(object):
                     player = Player([], [], method = "suit")
                     self.players.append(player)
         
-        # # deal the cards to the players
-        # for i in range(self.num_cards_in_hand):
-        #     for player in self.players:
-        #         player.cards_in_hand.append(self.deck.deal())
-        # for player in self.players:
-        #     player.sort_by(player.cards_in_hand, player.method)
-        # test scenario
+        # deal the cards to the players
+        for i in range(self.num_cards_in_hand):
+            for player in self.players:
+                player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
-            if type(player) == Player:
-                cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
-                player.cards_in_hand = cards
-            else:
-                cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
-                player.cards_in_hand = cards
+            player.sort_by(player.cards_in_hand, player.method)
+        # # test scenario
+        # for player in self.players:
+        #     if type(player) == Player:
+        #         cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
+        #         player.cards_in_hand = cards
+        #     else:
+        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
+        #         player.cards_in_hand = cards
         
         self.sort_method.configure(state = "normal")       
         self.back_card_labels = []     
@@ -328,20 +329,33 @@ class Rummy(object):
                 self.discard_button.place_forget()
             else:
                 return    
-            # card = input("Choose a card in your hand to discard. ")
-            # cards_to_choose_from = [str(card) for card in player.cards_in_hand]
-            # while card not in cards_to_choose_from:
-            #     print("Invalid entry. Please choose a card that is currently in your hand. \n")
-            #     card = input()
             
             # check winner
-            if len(player.cards_in_hand) == 0:
-                print("ROUND WINNER")
-            if self.is_game_winner():
-                print("GAME WINNER")
+            if player.game_winner():
+                print("game winner at discard")
+            elif player.round_winner():
                 
-            # cpu's turn
-            self.cpu_play()
+                destroy_frame(self.player_frame)
+                destroy_frame(self.other_frame)
+                destroy_frame(self.points_frame)
+                
+                self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                last_pos = [0, 0]
+                # code for creating table
+                for i in range(self.round_number + 1):
+                    for j in range(len(self.players)):
+                        e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
+                        x = j/10 + 0.4
+                        y = i/25 + 0.5
+                        e.place(relx=x, rely=y, anchor=CENTER)
+                        e.insert(END, self.round_points_list[i][j])
+                        last_pos = [x, y]
+                       
+                next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
+                next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
+            else:
+                # cpu's turn
+                self.cpu_play()
             
         else:
             card = player.discard_strategy1(self.table.cards_on_table)
@@ -481,63 +495,53 @@ class Rummy(object):
             clear_frame(self.points_frame)
             self.show_player_cards_on_table(player)
         # check for winner
-        if len(player.cards_in_hand) == 0:
-            print("ROUND WINNER")
-        if self.is_game_winner():
-            print("GAME WINNER")
-            return True
+        if player.game_winner():
+            # TODO: Display winner screen
+            print("game winner table cards!")
+        elif player.round_winner():
+                destroy_frame(self.player_frame)
+                destroy_frame(self.other_frame)
+                destroy_frame(self.points_frame)
+                
+                self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                last_pos = [0, 0]
+                # code for creating table
+                for i in range(self.round_number + 1):
+                    for j in range(len(self.players)):
+                        e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
+                        x = j/10 + 0.4
+                        y = i/25 + 0.5
+                        e.place(relx=x, rely=y, anchor=CENTER)
+                        e.insert(END, self.round_points_list[i][j])
+                        last_pos = [x, y]
+                       
+                next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
+                next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
         else:
             return False
      
     def get_points(self, player, must_put_down_points, required_card):
         index = 0
-        if not must_put_down_points and type(player) == Player:
-            ask = input("Do you want to put down point cards? ")
-            while ask != "yes" and ask != "no":
-                print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                ask = input()
-        elif type(player) == CPU:
-            ask = "yes" # strategy1
-        else:
-            ask = "yes"
+        ask = "yes" # cpu strategy1
             
         if ask == "yes": 
             multiple = True
             while multiple:
                 # table cards
                 cards_tabled = self.table_cards(player, required_card, index)
-                if cards_tabled == True and player.win_round():
+                if cards_tabled == True and player.round_winner():
                     multiple = False
                     return True
                 if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
-                    if type(player) == CPU:
-                        index += 1
-                        ask = "yes" # strategy1
-                    else:
-                        ask = input("Invalid selection. Try again? ")
-                        while ask != "yes" and ask != "no":
-                            print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                            ask = input()
-                        if ask == "no":
-                            multiple = False
+                    index += 1
+                    ask = "yes" # strategy1
                 elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
-                    if type(player) == Player:
-                        print("Invalid selection. Try again.")
-                    else:
-                        index += 1
+                    index += 1
                 elif cards_tabled == "no":
                     multiple = False
                 else:
                     required_card = None
-                    if type(player) == Player:
-                        ask = input("Do you have another set of cards to put down for points? \n")
-                        while ask != "yes" and ask != "no":
-                            print("Invalid entry. Please answer 'yes' or 'no'. \n")
-                            ask = input()
-                        if ask == "no":
-                            multiple = False
-                    else:
-                        index += 1
+                    index += 1
         return False
          
  
@@ -559,14 +563,54 @@ class Rummy(object):
         # get points
         is_winner = self.get_points(player, must_put_down_points, required_card)
         if is_winner:
-            winner = i + 1
-            print("WINNER IS CPU")
+            if player.game_winner():
+                print("CPU game winner cpu play get points!")
+            else:
+                destroy_frame(self.player_frame)
+                destroy_frame(self.other_frame)
+                destroy_frame(self.points_frame)
+                
+                self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                last_pos = [0, 0]
+                # code for creating table
+                for i in range(self.round_number + 1):
+                    for j in range(len(self.players)):
+                        e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
+                        x = j/10 + 0.4
+                        y = i/25 + 0.5
+                        e.place(relx=x, rely=y, anchor=CENTER)
+                        e.insert(END, self.round_points_list[i][j])
+                        last_pos = [x, y]
+                       
+                next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
+                next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
+                return
            
         # discard
-        self.discard(player)
-        if player.win_round():
-            winner = i + 1
-            print("WINNER IS CPU here")
+        self.discard(player)  
+        if player.game_winner():
+            # TODO: Display screen for winner
+            print("CPU game winner cpu play discard!")
+        if player.round_winner():
+            destroy_frame(self.player_frame)
+            destroy_frame(self.other_frame)
+            destroy_frame(self.points_frame)
+            
+            self.round_points_list.append((deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+            last_pos = [0, 0]
+            # code for creating table
+            for i in range(self.round_number + 1):
+                for j in range(len(self.players)):
+                    e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
+                    x = j/10 + 0.4
+                    y = i/25 + 0.5
+                    e.place(relx=x, rely=y, anchor=CENTER)
+                    e.insert(END, self.round_points_list[i][j])
+                    last_pos = [x, y]
+                    
+            next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
+            next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
+            return
             
         # remove cards from table
         for widget in self.other_frame.winfo_children():
@@ -614,89 +658,6 @@ class Rummy(object):
             for bn in card_buttons:
                 bn.configure(state="normal")
             
-        
-        
-    
-    def forget_table_cards(self):
-        for widget in self.other_frame.winfo_children():
-            if type(widget).__name__ == "Button" and widget["state"] == "disable":
-                widget.place_forget()
-        #self.show_table_cards_on_table()
-                
-    def show_table_cards_on_table(self):
-        paths = self.table.get_cards_on_table() # list of image paths
-        for i, card in enumerate(self.table.cards_on_table):
-            path = paths[i]
-            card_image = PhotoImage(file=path)
-            card_image.image = card_image
-            x = 0.2 + i/35
-            label = Label(self.other_frame, image=card_image, highlightthickness = 0, bd = 0)
-            label.place(relx=x, rely=0.85, anchor=CENTER)
-                            
-    def get_all_points(self):
-        player_points = {}
-        for i, player in enumerate(self.players):
-            player_points[i] = player.end_points()
-        return player_points
-    
-    def is_game_winner(self):
-        player_points = {}
-        for i, player in enumerate(self.players):
-            player_points[i] = player.end_points()
-        to_win = 500
-        winners = [player for player, points in player_points.items() if points == max(player_points.values()) and points >= to_win]
-        return winners
-            
-    def play_to_win(self):
-        round_winner = None
-        game_winner = None
-        while not round_winner:
-            round_winner = self.play()
-            if round_winner:
-                # set winning player as winner
-                winning_player = self.players[round_winner - 1]
-                winning_player.set_winner()
-                # get each player's points
-                player_points = self.get_all_points()
-                # check if anyone has 500 points
-                game_winner = self.is_game_winner(player_points)
-                if not game_winner:
-                    print()
-                    print("Winner of round ", self.round_number, " is Player ", round_winner, " !")
-                    for i, player in enumerate(self.players):
-                        print("Player ", i + 1, "'s points: ", player.points)
-                    print()
-                    print()
-                    print("Next round!")
-                    print()
-                    self.round_number += 1
-                    round_winner = True
-                    winning_player.set_winner() # reset winning status
-                elif len(game_winner) == 1:
-                    print("Winner is: player ", game_winner[0] + 1)
-                    round_winner = True
-                    game_winner = True
-                else:
-                    winner_s = ""
-                    for player in game_winner:
-                        player += 1
-                        winner_s = ", ".join(str(player)) 
-                    print("Winners are: ", winner_s, "!")
-                    round_winner = True
-                    game_winner = True
-        if not game_winner:
-            # set up next round
-            num_players = self.num_players
-            players = []
-            for i, player in enumerate(self.players):
-                if type(player) == Player:
-                    players.append(Player([], [], player.method, player.points))
-                else:
-                    players.append(CPU([], [], player.method, player.points))
-            self = Rummy(num_players, players, self.round_number)
-            self.play_to_win()
-            
-            
     def events(self):
         keep = self.back_card_labels
         for widget in self.other_frame.winfo_children():
@@ -705,31 +666,17 @@ class Rummy(object):
                 widget.configure(state = "normal")
         clear_frame(self.other_frame, keep = keep)
         
-        # card on table button:
-        # check if card is valid for pickup
-        # if valid for pickup then:
-        # disable deck button and repleace label
-        # disable cards on table buttons and replace labels
-        # enable cards in hand as buttons to put down points
-        # allow drag and drop
-        
-        
-        #   cards in hands button:
-        #   have a select button appear
-        
-        #       select (point down points?) button:
-        #       if card must be used then keep it selected until it is on the table
-        #       trigger to check which cards and see if valid placement
-        #       if cards are valid then place on point space, else pop up invalid selection 
-        
-        #       drag card to table to discard
-        #       forget select button
-        #       disable cards in hand buttons
-        #       replace labels
-        #       check for winners
-        #       if no winners then do cpu turn
-        #       check for winners
-        #       if no winners then enable deck button and card buttons (rinse, wash, repeat)
+    def next_round(self):
+        self.round_number += 1
+        players = []
+        for i, p in enumerate(self.players):
+            if type(p) == Player:
+                players.append(Player([], [], p.method, p.end_points()))
+            else:
+                players.append(CPU([], [], p.method, p.end_points()))
+                
+        self = Rummy(self.num_players, players, self.round_number)
+        self.events()
         
     def change_state_in_hand(self):
         for widget in self.player_frame.winfo_children():
@@ -830,8 +777,7 @@ class Rummy(object):
                         x = ((i + 1)/10 + (j + 1)/(num_cards * 12)) - 0.05
                         card_list[j].place(relx=x, rely=y, anchor=CENTER)
                         change_index = True
-                    
-                    
+                        
         other_frame_options = []
         for count, frame_cards in options_dict.items():
             if frame_cards[0] == self.other_frame:
@@ -891,10 +837,7 @@ def destroy_frame(frame):
     # destroy all widgets from frame
     for widget in frame.winfo_children():
        widget.destroy()
-    
-    # this will clear frame and frame will be empty
-    # if you want to hide the empty panel then
-    frame.pack_forget()
+    frame.destroy()
     
 def clear_frame(frame, keep = []):
     for widget in frame.winfo_children():
@@ -938,8 +881,7 @@ def set_sorting_method(bn, frame, clicked, player = None, button_label_both = "b
     
 def set_selected_table_card(self, card):
     self.selected_table_card = card
-        
-             
+            
 def config_border(i):
     bn = button_list[i]
     if bn["bd"] == 0:
@@ -949,7 +891,11 @@ def config_border(i):
     
 def config_border_and_pickup(i, self):
     selected = card_buttons[i]
-    selected.configure(bd=4)
+    if selected["bd"] == 0:
+        selected.configure(bd=4)
+    else:
+        selected.configure(bd=0)
+        return
         
     self.deck_button.configure(state="disable")
     self.deck_label.place(relx=0.1, rely=0.83, anchor=CENTER)
@@ -966,23 +912,6 @@ def config_border_and_pickup(i, self):
         self.discard_button.configure(state="normal")
     else:
         return
-                           
-def make_draggable(frame):
-    for widget in frame.winfo_children():
-        if type(widget).__name__ == "Button":
-            widget.bind("<Button-1>", on_drag_start)
-            widget.bind("<B1-Motion>", on_drag_motion)
-
-def on_drag_start(event):
-    widget = event.widget
-    widget._drag_start_x = event.x
-    widget._drag_start_y = event.y
-
-def on_drag_motion(event):
-    widget = event.widget
-    x = widget.winfo_x() - widget._drag_start_x + event.x
-    y = widget.winfo_y() - widget._drag_start_y + event.y
-    widget.place(x=x, y=y)
 
 def main():
     global gui
@@ -1001,11 +930,6 @@ def main():
     frame1.cpu_button = Button(frame1, text="CPU v CPU", font=("Courier", 15), command=lambda:create_cpu_game(0)).place(relx=0.5, rely=0.6, anchor=CENTER)
     frame1.player_button = Button(frame1, text="Player v CPU", font=("Courier", 15), command=lambda:[destroy_frame(frame1), create_game(1)]).place(relx=0.5, rely=0.45, anchor=CENTER)
     frame1.players_button = Button(frame1, text="Multiplayer", font=("Courier", 15), command=lambda:create_cpu_game(3)).place(relx=0.5, rely=0.75, anchor=CENTER)
-    
-    #deck image/button
-    # deck_image = PhotoImage(file="images/deck.png")
-    # deck_button = Button(gui, image=deck_image, command=print_hello)
-    # deck_button.place(relx=0.1, rely=0.5, anchor=CENTER)
 
     gui.mainloop() 
     
