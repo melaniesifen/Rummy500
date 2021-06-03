@@ -201,6 +201,32 @@ class Rummy(object):
         if pick_from == "pile":
             # take card from table
             new_card = self.table.pickup_card_from_pile()
+            
+            # if pile is empty, end the round
+            if not new_card:
+                if player.game_winner():
+                    self.game_over()
+                else:
+                    destroy_frame(self.player_frame)
+                    destroy_frame(self.other_frame)
+                    destroy_frame(self.points_frame)
+                    
+                    self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
+                    self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
+                    last_pos = [0, 0]
+                    # code for creating table
+                    for i in range(self.round_number + 2):
+                        for j in range(len(self.players) + 1):
+                            e = Entry(gui, width=10, bg='red4', fg='white', font=('Courier',16,'bold'))
+                            x = j/10 + 0.4
+                            y = i/25 + 0.5
+                            e.place(relx=x, rely=y, anchor=CENTER)
+                            e.insert(END, self.round_points_list[i][j])
+                            last_pos = [x, y]
+                        
+                    next_round_button = Button(gui, text="Go", highlightbackground = "red4", bg="red2", font=("Courier", 12), bd=4, command=lambda:self.next_round())
+                    next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
+                    return
             # put card in player's hand
             player.pick(new_card)
             # sort new hand
