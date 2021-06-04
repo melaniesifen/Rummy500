@@ -105,6 +105,14 @@ class Rummy(object):
         #         player.cards_in_hand = cards
         #     else:
         #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
+        #         player.cards_in_hand = cards  
+        # # test scenario 2
+        # for player in self.players:
+        #     if type(player) == Player:
+        #         cards = [Card(12, 'S'), Card(12, 'D'), Card(12, 'C'), Card(12, 'H'), Card(14, 'S'), Card(14, 'D'), Card(14, 'C'), Card(14, 'H')]
+        #         player.cards_in_hand = cards
+        #     else:
+        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
         #         player.cards_in_hand = cards
         
         self.sort_method.configure(state = "normal")       
@@ -211,6 +219,8 @@ class Rummy(object):
                     destroy_frame(self.other_frame)
                     destroy_frame(self.points_frame)
                     
+                    if self.round_number > 1:
+                        self.round_points_list = self.round_points_list[:-1]
                     self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
                     self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
                     last_pos = [0, 0]
@@ -368,6 +378,8 @@ class Rummy(object):
                 destroy_frame(self.other_frame)
                 destroy_frame(self.points_frame)
                 
+                if self.round_number > 1:
+                    self.round_points_list = self.round_points_list[:-1]
                 self.round_points_list.append((" ", self.players[0].end_points(), self.players[1].end_points()))
                 self.round_points_list.append(("Total: ", self.players[0].points, self.players[1].points))
                 last_pos = [0, 0]
@@ -532,6 +544,8 @@ class Rummy(object):
             destroy_frame(self.other_frame)
             destroy_frame(self.points_frame)
             
+            if self.round_number > 1:
+                self.round_points_list = self.round_points_list[:-1]
             self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
             self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
             last_pos = [0, 0]
@@ -601,6 +615,8 @@ class Rummy(object):
                 destroy_frame(self.other_frame)
                 destroy_frame(self.points_frame)
                 
+                if self.round_number > 1:
+                    self.round_points_list = self.round_points_list[:-1]
                 self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
                 self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
                 last_pos = [0, 0]
@@ -627,6 +643,8 @@ class Rummy(object):
             destroy_frame(self.other_frame)
             destroy_frame(self.points_frame)
             
+            if self.round_number > 1:
+                elf.round_points_list = self.round_points_list[:-1]
             self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
             self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
             last_pos = [0, 0]
@@ -699,16 +717,16 @@ class Rummy(object):
         clear_frame(self.other_frame, keep = keep)
         
     def next_round(self):
-        self.round_number += 1
+        round_number = self.round_number + 1
         players = []
         for i, p in enumerate(self.players):
             if type(p) == Player:
-                players.append(Player([], [], p.method, p.end_points()))
+                players.append(Player([], [], p.method, p.points))
             else:
-                players.append(CPU([], [], p.method, p.end_points()))
+                players.append(CPU([], [], p.method, p.points))
         
         clear_frame(gui)        
-        self = Rummy(self.num_players, players, self.round_number)
+        self = Rummy(self.num_players, players, round_number, self.round_points_list)
         self.events()
         
     def change_state_in_hand(self):
