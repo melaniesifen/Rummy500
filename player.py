@@ -69,8 +69,11 @@ class Player(object):
         return False
     
     def game_winner(self):
-        if self.points >= 500:
-            return True
+        if self.round_winner():
+            cards_on_table = [card for points in self.cards_on_table for card in points]
+            new_points = self.calculate_points(cards_on_table) + self.points + 25
+            if new_points >= 500:
+                return True
         return False
     
     def __str__(self):
