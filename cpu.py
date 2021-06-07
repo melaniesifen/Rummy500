@@ -21,7 +21,6 @@ class CPU(Player):
         best = []
         high = 0
         cards_in_hand = deepcopy(self.cards_in_hand)
-        cards_on_table = deepcopy(self.cards_on_table)
         cards_in_hand += table_cards
         for L in range(0, len(cards_in_hand) + 1):
             for subset_hand in itertools.combinations(cards_in_hand, L):
@@ -69,6 +68,20 @@ class CPU(Player):
                                     best.append(subset_hand)
                                 elif points == high:
                                     best.append(subset_hand)
+        
+        # check cards on table                            
+        for L in range(0, len(table_cards) + 1):
+            for subset_hand in itertools.combinations(table_cards, L):
+                if is_meld(subset_hand) or is_run(subset_hand):
+                    # count points
+                    points = self.calculate_points(subset_hand)
+                    if points > high:
+                        high = points
+                        subset_hand = list(subset_hand)
+                        best = []
+                        best.append(subset_hand)
+                    elif points == high:
+                        best.append(subset_hand)
                                 
         if len(best) > 0:
             return best
