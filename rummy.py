@@ -194,18 +194,19 @@ class Rummy(object):
         # pick card
         if type(player) == CPU:
             pick_from = player.pickup_strategy1(self.table.cards_on_table, self.all_melds, self.joint_runs)
+            new_card = None
             if type(pick_from) == list:
-                best_cards = pick_from
-                for subset_cards in best_cards:
-                    for card in subset_cards:
-                        if card in self.table.cards_on_table:
-                            new_card = card
-                            break
-                try:
-                    pick_from = "table"
-                except:
-                    pick_from = "pile"
-        
+                cards_on_table = deepcopy(self.table.cards_on_table)[::-1]
+                flat_pick_from = [card for sub in pick_from for card in sub]
+                for card in cards_on_table:
+                    if card in flat_pick_from:
+                        new_card = card
+                        break
+            if not new_card:
+                pick_from = "pile"
+            else:
+                pick_from = "table"
+                        
         if pick_from == "pile":
             # take card from table
             new_card = self.table.pickup_card_from_pile()
@@ -257,11 +258,8 @@ class Rummy(object):
                 # take cards from table
                 new_card = self.selected_table_card
             else:
-                try:
-                    new_card = str_to_card(new_card)
-                except:
-                    self.pickup(player, pick_from="pile")
-                    return
+                new_card = str_to_card(new_card)
+                
             # take cards off the table
             old_cards = deepcopy(self.table.cards_on_table)
             new_cards = self.table.pickup_cards_on_table(new_card)
