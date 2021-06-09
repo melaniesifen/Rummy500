@@ -974,12 +974,12 @@ def config_border_and_pickup(i, self):
         selected.configure(bd=0)
         return
         
-    self.deck_button.configure(state="disable")
-    self.deck_label.place(relx=0.1, rely=0.83, anchor=CENTER)
     self.sort_method.configure(command = lambda:set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = True, player = self.players[0], button_label_both="button"))
     set_selected_table_card(self, str_to_card(selected["text"]))
     valid_pickup = self.pickup(self.players[0], "table")
     if valid_pickup:
+        self.deck_button.configure(state="disable")
+        self.deck_label.place(relx=0.1, rely=0.83, anchor=CENTER)
         self.change_state_on_table(reset_cards_on_table = True, first_card = True)
         self.change_state_in_hand()
         self.select_button.place(relx=0.0251, rely=0.05)
