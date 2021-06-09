@@ -70,8 +70,8 @@ class Rummy(object):
         self.back_card = PhotoImage(file="images/card_back.png")
         self.back_card.image = self.back_card
         
-        self.select_button = Button(self.player_frame, text="select", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.table_cards(player = self.players[0], required_card=None, index=None))
-        self.discard_button = Button(self.player_frame, text="discard", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.discard(player = self.players[0]))
+        self.select_button = Button(self.player_frame, text="select", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.table_cards(player = self.players[0], required_card=self.required_card, index=None))
+        self.discard_button = Button(self.player_frame, text="discard", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.discard(player = self.players[0], required_card=self.required_card))
         
         # add players to game if there aren't any
         if self.round_number == 1:
@@ -155,7 +155,9 @@ class Rummy(object):
                 self.select_button.configure(state = "normal"), \
                 self.discard_button.configure(state="normal")])
             first_card_button.place(relx=0.2, rely=0.85, anchor=CENTER)
-            
+    
+        self.required_card = None
+           
     def get_all_tabled_cards(self):
         tabled_cards = deepcopy(self.all_tabled_cards)
         return tabled_cards
@@ -295,6 +297,7 @@ class Rummy(object):
                             player.cards_in_hand = potential_hand
                             player.sort_by(player.cards_in_hand, player.method)
                             must_put_down_points = True
+                            self.required_card = first_card
                             set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
                             return True
                     
@@ -324,15 +327,18 @@ class Rummy(object):
                 return False
             else:
                 must_put_down_points = True
+                self.required_card = first_card
                 # sort new hand
                 player.cards_in_hand = potential_hand
                 player.sort_by(player.cards_in_hand, player.method)
                 set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
                 return True
           
-    def discard(self, player):
+    def discard(self, player, required_card=None):
         # have players discard
         if type(player) == Player:
+            if self.required_card:
+                return
             cards_objects = []
             for i, bn in enumerate(button_list):
                 if bn["bd"] == 4:
@@ -421,6 +427,8 @@ class Rummy(object):
                     card = player.cards_in_hand[i]
                     cards_objects.append(card)
             if not cards_objects:
+                return
+            if self.required_card and self.required_card not in cards_objects:
                 return
             cards = [str(card) for card in cards_objects]
                     
@@ -561,6 +569,7 @@ class Rummy(object):
             next_round_button.place(relx=last_pos[0]+0.1, rely=last_pos[1]+0.1, anchor=CENTER)
             return True
         else:
+            self.required_card = None
             return False
      
     def get_points(self, player, must_put_down_points, required_card):
