@@ -218,14 +218,15 @@ class Rummy(object):
                 if player.game_winner():
                     self.game_over()
                 else:
+                    print("here 1")
                     destroy_frame(self.player_frame)
                     destroy_frame(self.other_frame)
                     destroy_frame(self.points_frame)
                     
                     if self.round_number > 1:
                         self.round_points_list = self.round_points_list[:-1]
-                    self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
-                    self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
+                    self.round_points_list.append((" ", self.players[0].end_points(), self.players[1].end_points()))
+                    self.round_points_list.append(("Total: ", self.players[0].points, self.players[1].points))
                     last_pos = [0, 0]
                     # code for creating table
                     for i in range(self.round_number + 2):
@@ -378,6 +379,7 @@ class Rummy(object):
             if player.game_winner():
                 self.game_over()
             elif player.round_winner():
+                print("here 2")
                 destroy_frame(self.player_frame)
                 destroy_frame(self.other_frame)
                 destroy_frame(self.points_frame)
@@ -428,7 +430,7 @@ class Rummy(object):
                     cards_objects.append(card)
             if not cards_objects:
                 return
-            if self.required_card and self.required_card not in cards_objects:
+            if required_card and required_card not in cards_objects:
                 return
             cards = [str(card) for card in cards_objects]
                     
@@ -546,14 +548,16 @@ class Rummy(object):
         if player.game_winner():
             self.game_over()
         elif player.round_winner():
+            print("here 3")
             destroy_frame(self.player_frame)
             destroy_frame(self.other_frame)
             destroy_frame(self.points_frame)
             
             if self.round_number > 1:
                 self.round_points_list = self.round_points_list[:-1]
-            self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
-            self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
+            self.round_points_list.append((" ", self.players[0].end_points(), self.players[1].end_points()))
+            self.round_points_list.append(("Total: ", self.players[0].points, self.players[1].points))
+            print(self.round_points_list)
             last_pos = [0, 0]
             # code for creating table
             for i in range(self.round_number + 2):
@@ -618,14 +622,15 @@ class Rummy(object):
             if player.game_winner():
                 self.game_over()
             else:
+                print("here 4")
                 destroy_frame(self.player_frame)
                 destroy_frame(self.other_frame)
                 destroy_frame(self.points_frame)
                 
                 if self.round_number > 1:
                     self.round_points_list = self.round_points_list[:-1]
-                self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
-                self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
+                self.round_points_list.append((" ", self.players[0].end_points(), self.players[1].end_points()))
+                self.round_points_list.append(("Total: ", self.players[0].points, self.players[1].points))
                 last_pos = [0, 0]
                 # code for creating table
                 for i in range(self.round_number + 2):
@@ -646,14 +651,15 @@ class Rummy(object):
         if player.game_winner():
             self.game_over()
         if player.round_winner():
+            print("here 5")
             destroy_frame(self.player_frame)
             destroy_frame(self.other_frame)
             destroy_frame(self.points_frame)
             
             if self.round_number > 1:
-                elf.round_points_list = self.round_points_list[:-1]
-            self.round_points_list.append((" ", deepcopy(self.players)[0].end_points(), deepcopy(self.players)[1].end_points()))
-            self.round_points_list.append(("Total: ", deepcopy(self.players)[0].points, deepcopy(self.players)[1].points))
+                self.round_points_list = self.round_points_list[:-1]
+            self.round_points_list.append((" ", self.players[0].end_points(), self.players[1].end_points()))
+            self.round_points_list.append(("Total: ", self.players[0].points, self.players[1].points))
             last_pos = [0, 0]
             # code for creating table
             for i in range(self.round_number + 2):
