@@ -95,20 +95,20 @@ class Rummy(object):
                     player = Player([], [], method = "suit")
                     self.players.append(player)
         
-        # deal the cards to the players
-        for i in range(self.num_cards_in_hand):
-            for player in self.players:
-                player.cards_in_hand.append(self.deck.deal())
-        for player in self.players:
-            player.sort_by(player.cards_in_hand, player.method)
-        # # test scenario
+        # # deal the cards to the players
+        # for i in range(self.num_cards_in_hand):
+        #     for player in self.players:
+        #         player.cards_in_hand.append(self.deck.deal())
         # for player in self.players:
-        #     if type(player) == Player:
-        #         cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
-        #         player.cards_in_hand = cards
-        #     else:
-        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
-        #         player.cards_in_hand = cards  
+        #     player.sort_by(player.cards_in_hand, player.method)
+        # test scenario
+        for player in self.players:
+            if type(player) == Player:
+                cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
+                player.cards_in_hand = cards
+            else:
+                cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S'), Card(11, 'S')]
+                player.cards_in_hand = cards  
         # # test scenario 2
         # for player in self.players:
         #     if type(player) == Player:
@@ -492,7 +492,6 @@ class Rummy(object):
     # Validate option chosen
     def return_option(self, options, potential_points, cards_objects, option_number):
         for bn in option_buttons:
-            print("option button: ", bn["text"])
             bn.destroy()
         self.valid_table_cards(self.players[0], options, potential_points, cards_objects, option_number)
     
@@ -526,11 +525,11 @@ class Rummy(object):
                         path = paths[i][j]
                         card_image = PhotoImage(file=path)
                         card_image.image = card_image
-                        x = (i + 1)/10 + (j + 1)/(num_cards * 12)
+                        x = (i + 1)/10 + (j + 1)/(num_cards * 10)
                         label = Label(self.points_frame, image=card_image, highlightthickness = 0, bd = 0, text=path[21:-13])
                         label.place(relx=x, rely=y, anchor=CENTER)
                     else:
-                        x = ((i + 1)/10 + (j + 1)/(num_cards * 12)) - 0.03
+                        x = ((i + 1)/10 + (j + 1)/(num_cards * 10)) - 0.03
                         card_list[j].place(relx=x, rely=y, anchor=CENTER)
                         change_index = True
                         
