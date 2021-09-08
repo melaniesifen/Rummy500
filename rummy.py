@@ -75,41 +75,26 @@ class Rummy(object):
         
         # add players to game if first round
         if self.round_number == 1:
-            # CPU v CPU
-            if self.num_players == 0:
-                self.num_players == 2
-                cpu1 = CPU([], [], method = "suit")
-                self.players.append(cpu1)
-                cpu2 = CPU([], [], method = "suit")
-                self.players.append(cpu2)
-            # CPU v Player
-            elif self.num_players == 1:
-                self.num_players = 2
-                player = Player([], [], method = "suit")
-                cpu = CPU([], [], method = "suit")
-                self.players.append(player)
-                self.players.append(cpu)
-            # Player v Player
-            else:
-                for i in range(self.num_players):
-                    player = Player([], [], method = "suit")
-                    self.players.append(player)
+            player = Player([], [], method = "suit")
+            cpu = CPU([], [], method = "suit")
+            self.players.append(player)
+            self.players.append(cpu)
         
-        # # deal the cards to the players
-        # for i in range(self.num_cards_in_hand):
-        #     for player in self.players:
-        #         player.cards_in_hand.append(self.deck.deal())
-        # for player in self.players:
-        #     player.sort_by(player.cards_in_hand, player.method)
-        # test scenario
+        # deal the cards to the players
+        for i in range(self.num_cards_in_hand):
+            for player in self.players:
+                player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
-            if type(player) == Player:
-                cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
-                player.cards_in_hand = cards
-            else:
-                cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S'), Card(11, 'S')]
-                player.cards_in_hand = cards  
-        # # test scenario 2
+            player.sort_by(player.cards_in_hand, player.method)
+        # # test scenario
+        # for player in self.players:
+        #     if type(player) == Player:
+        #         cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
+        #         player.cards_in_hand = cards
+        #     else:
+        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S'), Card(11, 'S')]
+        #         player.cards_in_hand = cards  
+        # # # test scenario 2
         # for player in self.players:
         #     if type(player) == Player:
         #         cards = [Card(12, 'S'), Card(12, 'D'), Card(12, 'C'), Card(12, 'H'), Card(14, 'S'), Card(14, 'D'), Card(14, 'C'), Card(14, 'H')]
@@ -216,12 +201,38 @@ class Rummy(object):
             pick_from = player.pickup_strategy1(self.table.cards_on_table, self.all_melds, self.joint_runs)
             new_card = None
             if type(pick_from) == list:
-                cards_on_table = deepcopy(self.table.cards_on_table)[::-1]
-                flat_pick_from = [card for sub in pick_from for card in sub]
-                for card in cards_on_table:
-                    if card in flat_pick_from:
-                        new_card = card
-                        break
+                cards_on_table = deepcopy(self.table.cards_on_table)
+                if len(pick_from) == 1:
+                    flat_pick_from = [card for sub in pick_from for card in sub]
+                    for card in cards_on_table:
+                        if card in flat_pick_from:
+                            new_card = card
+                            break
+                elif len(pick_from) > 1:
+                    reversed_cards_on_table = deepcopy(self.table.cards_on_table)[::-1]
+                    # remove cards from pick from that are not on table
+                    new_pick_from = []
+                    for sub in pick_from:
+                        new_sub = [card for card in sub if card in reversed_cards_on_table]
+                        new_pick_from.append(new_sub)
+                    # chosose cards which require fewest cards picked up over all
+                    sub_count_d = {}
+                    for sub in new_pick_from:
+                        sub = tuple(sub)
+                        count = 0
+                        find = 0
+                        for card in reversed_cards_on_table:
+                            if card not in sub:
+                                count += 1
+                            else:
+                                find += 1
+                            if find >= len(sub):
+                                sub_count_d[sub] = count
+                    best_sub = min(sub_count_d.keys(), key=(lambda k: sub_count_d[k]))
+                    for card in cards_on_table:
+                        if card in best_sub:
+                            new_card = card
+                            break
             if not new_card:
                 pick_from = "pile"
             else:
@@ -272,7 +283,9 @@ class Rummy(object):
                 is_valid_pick = True
                 if len(new_cards) > 1:
                     must_put_down_points = True
-                return (is_valid_pick, must_put_down_points, first_card)
+                    return (is_valid_pick, must_put_down_points, first_card)
+                else:
+                    return (is_valid_pick, must_put_down_points)
             
             # check every combination of cards in the player's hand
             potential_hand = player.cards_in_hand
@@ -952,11 +965,13 @@ def main():
 
     frame1.choice_label = Label(frame1, text="Choose your game:", font=("Courier", 30), bg="SpringGreen3").place(relx=0.5, rely=0.25, anchor=CENTER)
     frame1.cpu_button = Button(frame1, text="CPU v CPU", font=("Courier", 15), command=lambda:create_cpu_game(0)).place(relx=0.5, rely=0.6, anchor=CENTER)
-    frame1.player_button = Button(frame1, text="Player v CPU", font=("Courier", 15), command=lambda:[destroy_frame(frame1), create_game(1)]).place(relx=0.5, rely=0.45, anchor=CENTER)
+    frame1.player_button = Button(frame1, text="Player v CPU", font=("Courier", 15), command=lambda:[destroy_frame(frame1), create_game(2)]).place(relx=0.5, rely=0.45, anchor=CENTER)
     frame1.players_button = Button(frame1, text="Multiplayer", font=("Courier", 15), command=lambda:create_cpu_game(3)).place(relx=0.5, rely=0.75, anchor=CENTER)
 
     gui.mainloop() 
     
-main()           
+    
+if __name__ == "__main__":
+   main()         
 
 
