@@ -1,4 +1,8 @@
+from itertools import chain, combinations
 from card import Card
+
+def powerset(items_list):
+    return chain.from_iterable(combinations(items_list, r) for r in range(1, len(items_list) + 1))
 
 def _sort_by(self = None, hand = [], method = "suit"):
     if method == "suit":

@@ -28,6 +28,9 @@ class Card(object):
             rank = str(self.rank)
         return rank + self.suit
 
+    def __hash__(self):
+        return hash(str(self))
+    
     # equality tests
     def __eq__(self, other):
         return self.rank == other.rank and self.suit == other.suit

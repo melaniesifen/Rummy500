@@ -1,9 +1,10 @@
 import itertools
 import random
+import time
 from copy import deepcopy
 from card import Card
 from player import Player
-from CommonFunctions import _sort_by, str_to_card, is_meld, is_run
+from CommonFunctions import _sort_by, str_to_card, is_meld, is_run, powerset
 
 class CPU(Player):
     # def __init__(self, cards_in_hand, cards_on_table, method = "suit", points = 0):
@@ -18,73 +19,49 @@ class CPU(Player):
         if len(table_cards) == 0:
             return "pile"
         # find best card(s) based on hand to pick from table
-        best = []
-        high = 0
+        point_hands = []
         cards_in_hand = deepcopy(self.cards_in_hand)
         cards_in_hand += table_cards
-        for L in range(0, len(cards_in_hand) + 1):
-            for subset_hand in itertools.combinations(cards_in_hand, L):
-                for card in subset_hand:
-                    if card in table_cards and (is_meld(subset_hand) or is_run(subset_hand)):
-                        # count points
-                        points = self.calculate_points(subset_hand)
-                        if points > high:
-                            high = points
-                            subset_hand = list(subset_hand)
-                            best = []
-                            best.append(subset_hand)
-                        elif points == high:
-                            best.append(subset_hand)
-        
+        all_subsets = powerset(cards_in_hand)
+        for subset_hand in all_subsets:
+            if any(card in subset_hand for card in table_cards):
+                if is_meld(subset_hand) or is_run(subset_hand):
+                    point_hands.append(subset_hand)
+                    
         if len(all_melds) != 0:
             all_melds = deepcopy(all_melds)
             for meld in all_melds:
                 for card in table_cards:
                     meld.append(card)
                     if is_meld(meld):
-                        points = self.calculate_points(meld)
-                        if points > high:
-                            high = points
-                            best = []
-                            best.append(meld)
-                        elif points == high:
-                            best.append(meld)
+                        point_hands.append(meld)
                     meld.remove(card)
-                            
+                 
         if len(all_runs) != 0:
             all_runs = deepcopy(all_runs)
-            
             for run in all_runs:
                 run += table_cards
-                for L in range(0, len(run) + 1):
-                    for subset_hand in itertools.combinations(run, L):
-                        for card in subset_hand:
-                            if card in table_cards and is_run(subset_hand):
-                                # count points
-                                points = self.calculate_points(subset_hand)
-                                if points > high:
-                                    high = points
-                                    best = []
-                                    best.append(subset_hand)
-                                elif points == high:
-                                    best.append(subset_hand)
+                all_subsets = powerset(run)
+                for subset_hand in all_subsets:
+                    if any(card in subset_hand for card in table_cards):
+                        if is_run(subset_hand):
+                            point_hands.append(subset_hand)
         
-        # check cards on table                            
-        for L in range(0, len(table_cards) + 1):
-            for subset_hand in itertools.combinations(table_cards, L):
-                if is_meld(subset_hand) or is_run(subset_hand):
-                    # count points
-                    points = self.calculate_points(subset_hand)
-                    if points > high:
-                        high = points
-                        subset_hand = list(subset_hand)
-                        best = []
-                        best.append(subset_hand)
-                    elif points == high:
-                        best.append(subset_hand)
-                                
-        if len(best) > 0:
-            return best
+        # check cards on table
+        all_table_cards = powerset(table_cards)                          
+        for subset_hand in all_table_cards:
+            if is_meld(subset_hand) or is_run(subset_hand):
+                point_hands.append(subset_hand)
+        
+        unique_best = [] # remove duplicates while preserving order
+        for sublist in point_hands:
+            to_app = []
+            for card in sublist:
+                to_app.append(card)
+            if to_app not in unique_best:
+                unique_best.append(to_app)
+        if len(unique_best) > 0:
+            return unique_best
         return "pile"
     
     # put down all points immediately with highest values
