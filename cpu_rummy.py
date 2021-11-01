@@ -108,7 +108,6 @@ class CPURummy(Rummy):
         
     def play_round(self):
         round_winner = False
-        c = 0
         while not round_winner:
             for player in self.players:
                 round_winner = self.cpu_play(player)

@@ -1,8 +1,6 @@
 from math import floor
-import random
 import itertools
 from copy import deepcopy
-import time
 import gc
 from tkinter import *
 import tkinter.messagebox
