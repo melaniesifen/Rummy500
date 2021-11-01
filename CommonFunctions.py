@@ -1,88 +1,43 @@
 from itertools import chain, combinations
+from operator import attrgetter
 from card import Card
 
+# returns powerset of list of items
 def powerset(items_list):
     return chain.from_iterable(combinations(items_list, r) for r in range(1, len(items_list) + 1))
 
-def _sort_by(self = None, hand = [], method = "suit"):
+# takes hand of cards object and return sorted with preferred method
+def sort_by(hand, method):
     if method == "suit":
-        changed_type = False
-        if hand:
-            if type(hand[0]) == str:
-                hand = [str_to_card(card) for card in hand]
-                changed_type = True
-        sorted_hand = []
-        s = []
-        h = []
-        d = []
-        c = []
-        for card in hand:
-            if card.suit == 'S':
-                s.append(card)
-            elif card.suit == 'H':
-                h.append(card)
-            elif card.suit == 'D':
-                d.append(card)
-            else:
-                c.append(card)
-        sorted_s = sorted(s)
-        sorted_h = sorted(h)
-        sorted_d = sorted(d)
-        sorted_c = sorted(c)
-        sorted_hand = sorted_s + sorted_h + sorted_d + sorted_c 
-        if self:
-            self.cards_in_hand = sorted_hand
-        else:
-            if changed_type:
-                sorted_hand = [str(card) for card in sorted_hand]
-            return sorted_hand
-    else:
-        if hand:
-            if type(hand[0]) == str:
-                hand = [str_to_card(card) for card in hand]
-                sorted_hand = sorted(hand)
-                sorted_hand = [str(card) for card in sorted_hand]
-            else:
-                sorted_hand = sorted(hand)
-            if self:
-                self.cards_in_hand = sorted_hand
-                return
-            return sorted_hand 
-        else:
-            return []
-            
-            
-
+        return sorted(hand, key=attrgetter('suit', 'rank'))
+    return sorted(hand)
+    
+# bool: cards list is a run            
 def is_run(subset_hand):
+    # len of subset must be at least 3
     if len(subset_hand) < 3:
         return False
-
-    same_suit = True
-    for i in range(len(subset_hand) - 1):
-        same_suit = same_suit and (subset_hand[i].suit == subset_hand[i + 1].suit)
-    if not same_suit:
-        return False
-
-    subset_hand = _sort_by(None, subset_hand, method = "rank")
-    rank_order = True
-    for i in range(len(subset_hand) - 1):
-        if subset_hand[i].rank == 14:
+    # matching suits
+    the_suit = subset_hand[0].suit
+    for i in range(1, len(subset_hand)):
+        if subset_hand[i].suit != the_suit:
             return False
-        if (subset_hand[i].rank == subset_hand[i + 1].rank - 1) or (subset_hand[i + 1].rank == 14):
-            if (rank_order and (subset_hand[i].rank == subset_hand[i + 1].rank - 1)):
-                continue
-            if (rank_order and (subset_hand[0].rank == 2)):
-                continue
+    # rank is in order
+    rank_sorted_subset_hand = sort_by(subset_hand, "rank")
+    next_rank = rank_sorted_subset_hand[0].rank
+    for i in range(1, len(subset_hand)):
+        if rank_sorted_subset_hand[i].rank != next_rank + 1: 
             return False
-        else:
-            return False
+        next_rank += 1
     return True
 
 def is_meld(subset_hand):
+    # subset must have 3 or 4 cards
     if len(subset_hand) < 3 or len(subset_hand) > 4:
         return False
-    for i in range(len(subset_hand) - 1):
-        if subset_hand[i].rank != subset_hand[i + 1].rank:
+    the_suit = subset_hand[0].suit
+    for i in range(1, len(subset_hand)):
+        if subset_hand[i].suit != the_suit:
             return False
     return True
 
