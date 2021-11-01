@@ -1,18 +1,8 @@
 class Card(object):
-    
-    RANKS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-    
-    SUITS = ('C', 'D', 'H', 'S')
-    
-    def __init__(self, rank = 12, suit = 'S'):
-        if (rank in Card.RANKS):
-            self.rank = rank
-        else:
-            self.rank = 12
-        if (suit in Card.SUITS):
-            self.suit = suit
-        else:
-            self.suit = 'S'
+        
+    def __init__(self, rank, suit):
+        self.rank = rank
+        self.suit = suit
 
     # string representation of a Card object
     def __str__(self):
