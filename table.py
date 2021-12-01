@@ -3,9 +3,9 @@ from deck import Deck
 
 class Table(object):
     
-    def __init__(self, cards_in_pile, cards_on_table):
+    def __init__(self, cards_in_pile = [], cards_on_table = []):
         self.cards_in_pile = cards_in_pile
-        self.cards_on_table = []
+        self.cards_on_table = cards_on_table
         
     def place_card_on_table(self, card):
         if type(card) == str:
@@ -41,14 +41,8 @@ class Table(object):
         self.cards_on_table = to_keep
         return to_pickup
                 
-        
     def pickup_card_from_pile(self):
-        if len(self.cards_in_pile) == 0:
-            return None
-        else:
-            new_card = self.cards_in_pile.deal()
-            return new_card
-            
+        return None if not self.cards_in_pile else self.cards_in_pile.deal()            
             
     def __str__(self):
         cards_on_table = ' '.join(str(card) for card in self.cards_on_table)

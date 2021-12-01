@@ -1,8 +1,5 @@
 # command line application for ML purposes
-import random
-import itertools
 import time
-import mysql.connector
 import sys
 import gc
 from rummy import Rummy
@@ -30,20 +27,17 @@ class CPURummy(Rummy):
         
         # add players for first round
         if self.round_number == 1:
-            cpu1 = CPU([], [], method = "suit")
-            self.players.append(cpu1)
-            cpu2 = CPU([], [], method = "suit")
-            self.players.append(cpu2)
+            self.players = [CPU(), CPU()]
         
         # deal the cards to the players
-        for i in range(self.num_cards_in_hand):
+        for _ in range(self.num_cards_in_hand):
             for player in self.players:
                 player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
             player.sort_by(player.cards_in_hand, player.method)
             
         # show first card of the deck and allow for selection
-        self.table = Table(self.deck, [])
+        self.table = Table(self.deck)
         first_card = self.table.cards_in_pile.deal()
         self.table.place_card_on_table(first_card)
     
@@ -65,7 +59,7 @@ class CPURummy(Rummy):
         sys.exit()
             
             
-    def check_winner(self, player, default_loss=False):
+    def check_winner(self, player, default_loss = False):
         if player.game_winner():
             self.game_over()
         elif player.round_winner() or default_loss:              

@@ -13,13 +13,7 @@ class Deck(object):
         random.shuffle(self.deck)
         
     def deal(self):
-        if len(self.deck) == 0:
-            return None
-        else:
-            return self.deck.pop(0)
+        return None if not self.deck else self.deck.pop(0)
         
     def __len__(self):
-        count = 0
-        for card in self.deck:
-            count += 1
-        return count
+        return len(self.deck)

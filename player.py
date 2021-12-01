@@ -3,7 +3,7 @@ from CommonFunctions import _sort_by, str_to_card
 
 class Player(object):
     
-    def __init__(self, cards_in_hand, cards_on_table, method = "suit", points = 0):
+    def __init__(self, cards_in_hand = [], cards_on_table = [], method = "suit", points = 0):
         self.cards_in_hand = cards_in_hand
         self.cards_on_table = cards_on_table
         self.method = method

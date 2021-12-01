@@ -5,7 +5,7 @@ import gc
 from tkinter import *
 import tkinter.messagebox
 from collections import OrderedDict
-from CommonFunctions import _sort_by, is_run, is_meld, str_to_card
+from CommonFunctions import sort_by, is_run, is_meld, str_to_card
 from card import Card
 from deck import Deck
 from player import Player
@@ -27,6 +27,7 @@ class Rummy(object):
         self.all_melds = []
         self.cards_on_table = []
         self.round_points_list = round_points_list
+        self.player_picked_up = []
         
         # set up frames
         self.player_frame = Frame(gui, width=1000, height=105)
@@ -192,33 +193,29 @@ class Rummy(object):
     ############################################## \
               
     def pickup(self, player, pick_from=None):
-        is_valid_pick = False
-        must_put_down_points = False
+        is_valid_pick = must_put_down_points = False
         # pick card
         if type(player) == CPU:
             pick_from = player.pickup_strategy1(self.table.cards_on_table, self.all_melds, self.joint_runs)
             new_card = None
             if type(pick_from) == list:
-                cards_on_table = deepcopy(self.table.cards_on_table)
+                cards_on_table = set(deepcopy(self.table.cards_on_table))
+                reversed_cards_on_table = cards_on_table[::-1]
+                flat_pick_from = set(card for sub in pick_from for card in sub)
+                options = flat_pick_from.intersection(cards_on_table)
                 if len(pick_from) == 1:
-                    flat_pick_from = [card for sub in pick_from for card in sub]
-                    for card in cards_on_table:
-                        if card in flat_pick_from:
-                            new_card = card
-                            break
+                    new_card = options[0]
                 elif len(pick_from) > 1:
                     reversed_cards_on_table = deepcopy(self.table.cards_on_table)[::-1]
-                    # remove cards from pick from that are not on table
+                    # creates 2d list of cards on table to pick up
                     new_pick_from = []
                     for sub in pick_from:
-                        new_sub = [card for card in sub if card in reversed_cards_on_table]
+                        new_sub = tuple(card for card in sub if card in reversed_cards_on_table)
                         new_pick_from.append(new_sub)
-                    # chosose cards which require fewest cards picked up over all
+                    # choose cards which require fewest cards picked up over all
                     sub_count_d = {}
                     for sub in new_pick_from:
-                        sub = tuple(sub)
-                        count = 0
-                        find = 0
+                        count = find = 0
                         for card in reversed_cards_on_table:
                             if card not in sub:
                                 count += 1
@@ -239,10 +236,10 @@ class Rummy(object):
         if pick_from == "pile":
             # take card from table
             new_card = self.table.pickup_card_from_pile()
-            
             # if pile is empty, end the round
             if not new_card:
                 self.check_winner(player=player, default_loss=True)
+                return
             # put card in player's hand
             player.pick(new_card)
             # sort new hand
@@ -258,7 +255,7 @@ class Rummy(object):
                 if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
                     return True
                 return False
-
+            
             if type(player) == Player:
                 # take cards from table
                 new_card = self.selected_table_card
@@ -275,17 +272,16 @@ class Rummy(object):
                 first_card = card
                                         
             # sort new hand
-            player.cards_in_hand = _sort_by(None, player.cards_in_hand, player.method)            
+            player.cards_in_hand = sort_by(player.cards_in_hand, player.method)            
             
             if type(player) == CPU:
                 is_valid_pick = True
                 if len(new_cards) > 1:
                     must_put_down_points = True
                     return (is_valid_pick, must_put_down_points, first_card)
-                else:
-                    return (is_valid_pick, must_put_down_points)
+                return (is_valid_pick, must_put_down_points)
             
-            # check every combination of cards in the player's hand
+            # check valid pickup for player
             potential_hand = player.cards_in_hand
             if len(new_cards) == 1:
                 is_valid_pick = True
@@ -293,8 +289,8 @@ class Rummy(object):
                 player.sort_by(player.cards_in_hand, player.method)
                 set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
                 return True
-
-            for L in range(0, len(potential_hand) + 1):
+            # check every combination of cards in the player's hand 
+            for L in range(len(potential_hand) + 1):
                 for subset_hand in itertools.combinations(potential_hand, L):
                     if first_card in subset_hand:
                         if is_valid(subset_hand):
@@ -305,44 +301,39 @@ class Rummy(object):
                             self.required_card = first_card
                             set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
                             return True
-                    
+            # check melds on table for valid pickup     
             if not is_valid_pick:     
-                # check every combination of cards on the table
                 all_melds = deepcopy(self.get_all_melds())
                 for points in all_melds:
                     points.append(first_card)
                     if is_valid(points):
                         is_valid_pick = True
                         break
-                    
+            # check runs on table for valid pickup     
+            # TODO: Bug here. Not just first card but maybe others will contribute to run
             if not is_valid_pick:
-                # check if it can be added to existing joint runs            
                 all_joint_runs = deepcopy(self.get_all_joint_runs())
                 for run in all_joint_runs:
                     run.append(first_card)
                     if is_run(run):
                         is_valid_pick = True
                         break
-                    
+            # if still not valid then return cards    
             if not is_valid_pick: 
-                # put cards back on table
-                self.table.cards_on_table = old_cards
-                # remove cards from hand
-                player.cards_in_hand = old_hand
+                self.table.cards_on_table, player.cards_in_hand = old_cards, old_hand
                 return False
-            else:
-                must_put_down_points = True
-                self.required_card = first_card
-                # sort new hand
-                player.cards_in_hand = potential_hand
-                player.sort_by(player.cards_in_hand, player.method)
-                set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
-                return True
+            # otherwise return True
+            must_put_down_points = True
+            self.required_card = first_card
+            player.cards_in_hand = potential_hand
+            player.sort_by(player.cards_in_hand, player.method)
+            set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
+            return True
             
     def table_cards(self, player, required_card, index):
         if type(player) == CPU:
             combinations = player.table_cards_strategy1()
-            if len(combinations) <= 0 or len(combinations) <= index:
+            if not combinations or len(combinations) <= index:
                 return "no"
             cards_objects = combinations[index]
             cards_objects = [card for card in cards_objects] # tuple to list
@@ -383,32 +374,26 @@ class Rummy(object):
                     options.append(old_run)
                     potential_points.append(run)
                    
-            if len(options) > 0:
+            if options:
                 return (options, potential_points)
-            
             return False
         
         def is_valid(subset_hand, subset_hand_objects):
             if len(set(subset_hand)) != len(subset_hand): # repeated card
-                # print("Invalid. Cards cannot be repeated")
                 return False
             if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
                 return True
             valid_options = is_going_to_tabled_cards(subset_hand_objects)
-            if valid_options == False:
+            if not valid_options:
                 return False
-            else:
-                options = valid_options[0]
-                potential_points = valid_options[1]
-                return (options, potential_points)
+            return valid_options
 
         check = is_valid(cards, cards_objects)
-        if check != False:
+        if check:
             if type(check) == tuple:
                 options = check[0]
                 potential_points = check[1]
                 path_options = [[card.small_image_path()[21:-13] for card in sublist] for sublist in options]
-                options_list_str = [[str(card) for card in sublist] for sublist in options]
                 options_dict = OrderedDict()
                 count = 1
                 if type(player) == CPU:
@@ -448,17 +433,11 @@ class Rummy(object):
                 self.all_melds.remove(options[choice - 1])
                 self.all_melds.append(potential_points[choice - 1])
         # place cards into player's cards on table
-        cards_to_keep = []
-        point_list = []
-        for card in cards_objects:
-            point_list.append(card)
-        # sort the cards before putting on table
+        point_list = [card for card in cards_objects]
+        # sort the cards before putting on table and remove from player's hand
         point_list = sorted(point_list)
         player.cards_on_table.append(point_list)
-        # remove cards from player's hand
-        for card in player.cards_in_hand:
-            if card not in cards_objects:
-                cards_to_keep.append(card)
+        cards_to_keep = [card for card in player.cards_in_hand if card not in cards_objects]
         player.cards_in_hand = cards_to_keep
         player.sort_by(player.cards_in_hand, player.method)
         # Update all cards on table
@@ -472,26 +451,24 @@ class Rummy(object):
         # check for winner
         if self.check_winner(player):
             return True
-        else:
-            self.required_card = None
-            return False
+        self.required_card = None
+        return False
      
     def get_points(self, player, must_put_down_points, required_card):
         index = 0
-        ask = "yes" # cpu strategy1
-            
-        if ask == "yes": 
+        ask = True # cpu strategy1   
+        if ask: 
             multiple = True
             while multiple:
                 # table cards
                 cards_tabled = self.table_cards(player, required_card, index)
-                if cards_tabled == True and player.round_winner():
+                if cards_tabled and player.round_winner():
                     multiple = False
                     return True
-                if cards_tabled == False and must_put_down_points == False: # cards chosen incorrectly
+                if not cards_tabled and not must_put_down_points: # cards chosen incorrectly
                     index += 1
-                    ask = "yes" # strategy1
-                elif cards_tabled == False and must_put_down_points: # cards chosen incorrectly but must point down points
+                    ask = True # strategy1
+                elif not cards_tabled and must_put_down_points: # cards chosen incorrectly but must point down points
                     index += 1
                 elif cards_tabled == "no":
                     multiple = False
@@ -603,7 +580,6 @@ class Rummy(object):
                 if bn["bd"] == 4:
                     card = player.cards_in_hand[i]
                     cards_objects.append(card)
-            
             if len(cards_objects) == 1:
                 # add card to table
                 self.table.place_card_on_table(card)
@@ -631,13 +607,11 @@ class Rummy(object):
                 self.select_button.place_forget()
                 self.discard_button.place_forget()
             else:
-                return    
-            
+                return 
             if self.check_winner(player):
                 return
             # cpu's turn
             self.cpu_play()
-            
         else:
             card = player.discard_strategy1(self.table.cards_on_table)
             # add card to table
@@ -666,9 +640,8 @@ class Rummy(object):
             
         # get points
         is_winner = self.get_points(player, must_put_down_points, required_card)
-        if is_winner:
-            if self.check_winner(player):
-                return
+        if is_winner and self.check_winner(player):
+            return
             
         # discard
         self.discard(player)  
@@ -931,7 +904,6 @@ def config_border_and_pickup(i, self):
     else:
         selected.configure(bd=0)
         return
-        
     self.sort_method.configure(command = lambda:set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked = True, player = self.players[0], button_label_both="button"))
     set_selected_table_card(self, str_to_card(selected["text"]))
     valid_pickup = self.pickup(self.players[0], "table")
@@ -967,7 +939,6 @@ def main():
     frame1.players_button = Button(frame1, text="Multiplayer", font=("Courier", 15), command=lambda:create_cpu_game(3)).place(relx=0.5, rely=0.75, anchor=CENTER)
 
     gui.mainloop() 
-    
     
 if __name__ == "__main__":
    main()         

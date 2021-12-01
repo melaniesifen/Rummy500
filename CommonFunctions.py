@@ -19,9 +19,8 @@ def is_run(subset_hand):
         return False
     # matching suits
     the_suit = subset_hand[0].suit
-    for i in range(1, len(subset_hand)):
-        if subset_hand[i].suit != the_suit:
-            return False
+    if not all(card.suit == the_suit for card in subset_hand):
+        return False
     # rank is in order
     rank_sorted_subset_hand = sort_by(subset_hand, "rank")
     next_rank = rank_sorted_subset_hand[0].rank
@@ -36,10 +35,7 @@ def is_meld(subset_hand):
     if len(subset_hand) < 3 or len(subset_hand) > 4:
         return False
     the_suit = subset_hand[0].suit
-    for i in range(1, len(subset_hand)):
-        if subset_hand[i].suit != the_suit:
-            return False
-    return True
+    return all(card.suit == the_suit for card in subset_hand)
 
 def str_to_card(card):
     if type(card) == str:
