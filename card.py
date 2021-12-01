@@ -1,4 +1,7 @@
 class Card(object):
+    
+    RANKS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+    SUITS = ('C', 'D', 'H', 'S')
         
     def __init__(self, rank, suit):
         self.rank = rank
@@ -273,7 +276,6 @@ class Card(object):
             self.suit = "D"
         else:
             self.suit = "C"
-        card = Card(self.rank, self.suit)
-        return card
+        return Card(self.rank, self.suit)
         
         

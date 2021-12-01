@@ -96,19 +96,6 @@ class CPU(Player):
                 if card.rank == least_common_rank and card.suit == least_common_suit:
                     return card
             
-            
-            
-        # 2s, 3s, 5s, 6d, 8h, 8d, jc, jh
-        # s = {s:3, d:2, h:1}
-        # least_s = h
-        # r = {2:1, 3:1, 5:1, 6:1, 8:2}
-        # least_r = 5
-        
-        
-        
-        
-        
-        
         
     def discard_strategy1(self, table_cards):
         # check in hand - there should be no point subsets
@@ -135,12 +122,7 @@ class CPU(Player):
                 worst_suits += [card for card in self.cards_in_hand if card.suit == suit and 10 <= card.rank < 14]
             if not worst_suits:
                 worst_suits += [card for card in self.cards_in_hand if card.suit == suit and card.rank == 14]
-                
-        # 2s, 3s, 5s, 6d, 8h, 8d, jc, jh
-        # worst rank = [2, 3, 4, 5, 6]
-        # worst suit = [c]
-        
-            
+                    
         if len(worst_card) > 0:
             low = 10
             worst_card_rank_suit = [card for card in worst_card if card.rank < low]

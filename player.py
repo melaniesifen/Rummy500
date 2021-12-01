@@ -1,5 +1,5 @@
 from card import Card
-from CommonFunctions import _sort_by, str_to_card
+from CommonFunctions import sort_by, calculate_points
 
 class Player(object):
     
@@ -12,14 +12,14 @@ class Player(object):
      
     def set_winner(self):
         # switch
-        winner = self.winner
-        self.winner = not winner
+        self.winner = not self.winner
         
     def get_method(self):
         return self.method
     
     def set_method(self, method):
-        self.method = method
+        if method == "suit" or method == "rank":
+            self.method = method
         
     def get_cards_in_hand(self):
         paths = []
@@ -30,48 +30,33 @@ class Player(object):
     def get_cards_on_table(self):
         paths = []
         for card_list in self.cards_on_table:
-            path_list = []
-            for card in card_list:
-                path_list.append(card.small_image_path())
+            path_list = [card.small_image_path() for card in card_list]
             paths.append(path_list)
         return paths
-        
         
     def pick(self, card):
         self.cards_in_hand.append(card)
     
     def discard(self, card):
         self.cards_in_hand.remove(card)
-        
-    def calculate_points(self, hand):
-        count = 0
-        for card in hand:
-            if card.rank < 10:
-                count += 5
-            elif card.rank < 14:
-                count += 10
-            else: # Ace
-                count += 15
-        return count
                 
     def end_points(self):
-        cards_on_table = [card for points in self.cards_on_table for card in points]
-        new_points = self.calculate_points(cards_on_table) - self.calculate_points(self.cards_in_hand)
+        # cards_on_table = [card for points in self.cards_on_table for card in points]
+        new_points = calculate_points(self.cards_on_table) - calculate_points(self.cards_in_hand)
         if self.winner:
             new_points += 25 # 25 points for winning the round
         self.points += new_points
         return new_points
     
     def round_winner(self):
-        if len(self.cards_in_hand) == 0:
+        if not self.cards_in_hand:
             self.winner = True
-            return True
-        return False
+        return self.winner
     
     def game_winner(self):
         if self.round_winner():
             cards_on_table = [card for points in self.cards_on_table for card in points]
-            new_points = self.calculate_points(cards_on_table) + self.points + 25
+            new_points = calculate_points(cards_on_table) + self.points + 25
             if new_points >= 500:
                 return True
         return False
@@ -81,4 +66,4 @@ class Player(object):
         return "Cards in hand: " + cards_in_hand
     
     def sort_by(self, hand, method):
-        _sort_by(self, self.cards_in_hand, self.method)
+        self.cards_in_hand = sort_by(self.cards_in_hand, self.method)

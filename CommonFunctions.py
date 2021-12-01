@@ -52,3 +52,14 @@ def str_to_card(card):
         else:
             card = Card(rank = int(card[0]), suit = card[1])
     return card
+
+def calculate_points(hand):
+    count = 0
+    for card in hand:
+        if card.rank < 10:
+            count += 5
+        elif card.rank < 14:
+            count += 10
+        else: # Ace
+            count += 15
+    return count
