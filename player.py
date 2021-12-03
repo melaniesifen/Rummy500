@@ -1,5 +1,7 @@
+from collections import defaultdict
+from copy import deepcopy
 from card import Card
-from CommonFunctions import sort_by, calculate_points
+from CommonFunctions import sort_by, calculate_points, powerset, is_meld, is_run
 
 class Player(object):
     
@@ -64,6 +66,35 @@ class Player(object):
     def __str__(self):
         cards_in_hand = ' '.join(str(card) for card in self.cards_in_hand)
         return "Cards in hand: " + cards_in_hand
-    
-    def sort_by(self, hand, method):
-        self.cards_in_hand = sort_by(self.cards_in_hand, self.method)
+        
+    # put down all points immediately with highest values
+    def all_valid_table_card_options(self, hand, all_melds, all_runs):
+        options = defaultdict(list)
+        hand = deepcopy(hand)
+        all_hands = powerset(hand)
+        # run or meld within hand
+        all_runs_in_hand = []
+        for subset_hand in all_hands:
+            if is_meld(subset_hand):
+                options[subset_hand].append(None)
+            elif is_run(subset_hand):
+                all_runs_in_hand.append(subset_hand)
+                options[subset_hand].append(None)
+        # points for all melds
+        all_melds = deepcopy(all_melds)
+        for meld in all_melds:
+            if len(meld) == 3:
+                for card in hand:
+                    temp_meld = deepcopy(meld)
+                    temp_meld.append(card)
+                    if is_meld(temp_meld):
+                        options[tuple(temp_meld)].append(meld)
+        # points for all runs
+        all_runs = deepcopy(all_runs)
+        for run in all_runs:
+            temp_run = run + hand
+            all_possible_runs = powerset(temp_run)
+            for subset_hand in all_possible_runs:
+                if is_run(subset_hand):
+                    options[subset_hand].append(run)
+        return options

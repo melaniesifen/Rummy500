@@ -2,9 +2,17 @@ from itertools import chain, combinations
 from operator import attrgetter
 from card import Card
 
+# check if hand of card objects is valid point
+def is_valid(subset_hand_objects):
+    if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
+        return True
+    return False
+
 # returns powerset of list of items
-def powerset(items_list):
-    return chain.from_iterable(combinations(items_list, r) for r in range(1, len(items_list) + 1))
+def powerset(items_list, size = 1):
+    if size < len(items_list):
+        size = 1
+    return chain.from_iterable(combinations(items_list, r) for r in range(size, len(items_list) + 1))
 
 # takes hand of cards object and return sorted with preferred method
 def sort_by(hand, method):
@@ -34,8 +42,8 @@ def is_meld(subset_hand):
     # subset must have 3 or 4 cards
     if len(subset_hand) < 3 or len(subset_hand) > 4:
         return False
-    the_suit = subset_hand[0].suit
-    return all(card.suit == the_suit for card in subset_hand)
+    the_rank = subset_hand[0].rank
+    return all(card.rank == the_rank for card in subset_hand)
 
 def str_to_card(card):
     if type(card) == str:

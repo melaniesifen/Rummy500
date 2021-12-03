@@ -1,17 +1,14 @@
-from math import floor
-import itertools
 from copy import deepcopy
 import gc
 from tkinter import *
 import tkinter.messagebox
 from collections import OrderedDict
-from CommonFunctions import sort_by, is_run, is_meld, str_to_card
+from CommonFunctions import sort_by, is_run, is_meld, str_to_card, is_valid, powerset
 from card import Card
 from deck import Deck
 from player import Player
 from cpu import CPU
 from table import Table
-
 
 class Rummy(object):
     # constructor
@@ -161,6 +158,7 @@ class Rummy(object):
     ##############################################
     
     def set_all_tabled_cards(self):
+        self.all_tabled_cards = []
         for player in self.players:
             self.all_tabled_cards.append(player.cards_on_table)
             
@@ -193,253 +191,174 @@ class Rummy(object):
     ############################################## \
               
     def pickup(self, player, pick_from=None):
-        is_valid_pick = must_put_down_points = False
         # pick card
         if type(player) == CPU:
-            pick_from = player.pickup_strategy1(self.table.cards_on_table, self.all_melds, self.joint_runs)
-            new_card = None
-            if type(pick_from) == list:
-                cards_on_table = set(deepcopy(self.table.cards_on_table))
-                reversed_cards_on_table = cards_on_table[::-1]
-                flat_pick_from = set(card for sub in pick_from for card in sub)
-                options = flat_pick_from.intersection(cards_on_table)
-                if len(pick_from) == 1:
-                    new_card = options[0]
-                elif len(pick_from) > 1:
-                    reversed_cards_on_table = deepcopy(self.table.cards_on_table)[::-1]
-                    # creates 2d list of cards on table to pick up
-                    new_pick_from = []
-                    for sub in pick_from:
-                        new_sub = tuple(card for card in sub if card in reversed_cards_on_table)
-                        new_pick_from.append(new_sub)
-                    # choose cards which require fewest cards picked up over all
-                    sub_count_d = {}
-                    for sub in new_pick_from:
-                        count = find = 0
-                        for card in reversed_cards_on_table:
-                            if card not in sub:
-                                count += 1
-                            else:
-                                find += 1
-                            if find >= len(sub):
-                                sub_count_d[sub] = count
-                    best_sub = min(sub_count_d.keys(), key=(lambda k: sub_count_d[k]))
-                    for card in cards_on_table:
-                        if card in best_sub:
-                            new_card = card
-                            break
-            if not new_card:
+            pick_from = player.pickup_options(self.table.cards_on_table, self.all_melds, self.joint_runs)
+            if type(pick_from) == Card:
+                new_card, pick_from = pick_from, "table"
+            else:
                 pick_from = "pile"
-            else:
-                pick_from = "table"
-                        
+        # else pick_from is given by user selection             
         if pick_from == "pile":
-            # take card from table
-            new_card = self.table.pickup_card_from_pile()
-            # if pile is empty, end the round
-            if not new_card:
-                self.check_winner(player=player, default_loss=True)
-                return
-            # put card in player's hand
-            player.pick(new_card)
-            # sort new hand
-            player.sort_by(player.cards_in_hand, player.method)
-            if type(player) == Player:
-                set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
+            return self.pick_from_pile(player)
+        if pick_from == "table":
+            return self.pick_from_table(player, new_card)
+            
+    def pick_from_pile(self, player):
+        new_card = self.table.pickup_card_from_pile()
+        # if pile is empty, end the round
+        if not new_card:
+            self.check_winner(player=player, default_loss=True)
+            return
+        # put card in player's hand
+        player.pick(new_card)
+        player.sort_by(player.cards_in_hand, player.method)
+        if type(player) == Player:
+            set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
+        is_valid_pick, must_put_down_points = True, False
+        return (is_valid_pick, must_put_down_points)
+    
+    def pick_from_table(self, player, new_card):
+        is_valid_pick = must_put_down_points = False
+        # check that card is valid to pick up                       
+        if type(player) == Player:
+            # take cards from table
+            new_card = self.selected_table_card
+        else:
+            new_card = str_to_card(new_card)
+        # take cards off the table
+        old_cards = deepcopy(self.table.cards_on_table)
+        new_cards = self.table.pickup_cards_on_table(new_card)
+        # put cards in player's hand
+        old_hand = deepcopy(player.cards_in_hand)
+        for card in new_cards:
+            player.pick(card)
+            first_card = card                 
+        # sort new hand
+        player.cards_in_hand = sort_by(player.cards_in_hand, player.method)            
+        if type(player) == CPU:
             is_valid_pick = True
+            if len(new_cards) > 1:
+                must_put_down_points = True
+                return (is_valid_pick, must_put_down_points, first_card)
             return (is_valid_pick, must_put_down_points)
-            
-        elif pick_from == "table":
-            # check that card is valid to pick up            
-            def is_valid(subset_hand_objects):
-                if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
-                    return True
-                return False
-            
-            if type(player) == Player:
-                # take cards from table
-                new_card = self.selected_table_card
-            else:
-                new_card = str_to_card(new_card)
-                
-            # take cards off the table
-            old_cards = deepcopy(self.table.cards_on_table)
-            new_cards = self.table.pickup_cards_on_table(new_card)
-            # put cards in player's hand
-            old_hand = deepcopy(player.cards_in_hand)
-            for card in new_cards:
-                player.pick(card)
-                first_card = card
-                                        
-            # sort new hand
-            player.cards_in_hand = sort_by(player.cards_in_hand, player.method)            
-            
-            if type(player) == CPU:
-                is_valid_pick = True
-                if len(new_cards) > 1:
-                    must_put_down_points = True
-                    return (is_valid_pick, must_put_down_points, first_card)
-                return (is_valid_pick, must_put_down_points)
-            
-            # check valid pickup for player
-            potential_hand = player.cards_in_hand
-            if len(new_cards) == 1:
-                is_valid_pick = True
-                player.cards_in_hand = potential_hand
-                player.sort_by(player.cards_in_hand, player.method)
-                set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
-                return True
-            # check every combination of cards in the player's hand 
-            for L in range(len(potential_hand) + 1):
-                for subset_hand in itertools.combinations(potential_hand, L):
-                    if first_card in subset_hand:
-                        if is_valid(subset_hand):
-                            is_valid_pick = True
-                            player.cards_in_hand = potential_hand
-                            player.sort_by(player.cards_in_hand, player.method)
-                            must_put_down_points = True
-                            self.required_card = first_card
-                            set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
-                            return True
-            # check melds on table for valid pickup     
-            if not is_valid_pick:     
-                all_melds = deepcopy(self.get_all_melds())
-                for points in all_melds:
-                    points.append(first_card)
-                    if is_valid(points):
-                        is_valid_pick = True
-                        break
-            # check runs on table for valid pickup     
-            # TODO: Bug here. Not just first card but maybe others will contribute to run
-            if not is_valid_pick:
-                all_joint_runs = deepcopy(self.get_all_joint_runs())
-                for run in all_joint_runs:
-                    run.append(first_card)
-                    if is_run(run):
-                        is_valid_pick = True
-                        break
-            # if still not valid then return cards    
-            if not is_valid_pick: 
-                self.table.cards_on_table, player.cards_in_hand = old_cards, old_hand
-                return False
-            # otherwise return True
-            must_put_down_points = True
-            self.required_card = first_card
+        # check valid pickup for player
+        potential_hand = player.cards_in_hand
+        is_valid_pick, must_put_down_points = self.check_valid_pickup_for_player(new_cards)
+        if is_valid_pick:
             player.cards_in_hand = potential_hand
             player.sort_by(player.cards_in_hand, player.method)
             set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
+            if must_put_down_points:
+                self.required_card = first_card
             return True
-            
-    def table_cards(self, player, required_card, index):
+        self.table.cards_on_table, player.cards_in_hand = old_cards, old_hand
+        return False
+        
+    def check_valid_pickup_for_player(self, new_cards, potential_hand, first_card):
+        if len(new_cards) == 1:
+            return (True, False)
+        hand_powerset = powerset(potential_hand)
+        for subset_hand in hand_powerset:
+            if first_card in subset_hand and is_valid(subset_hand):
+                return (True, True)
+        all_melds = deepcopy(self.get_all_melds())
+        for points in all_melds:
+            points.append(first_card)
+            if is_valid(points):
+                return (True, True)
+        all_runs = deepcopy(self.get_all_joint_runs())
+        for run in all_runs:
+            run += potential_hand
+            all_possible_runs = powerset(run)
+            for subset_hand in all_possible_runs:
+                if first_card in subset_hand and is_run(subset_hand):
+                    return (True, True)
+        return (False, False)
+               
+    def table_cards(self, player, required_card):
         if type(player) == CPU:
-            combinations = player.table_cards_strategy1()
-            if not combinations or len(combinations) <= index:
-                return "no"
-            cards_objects = combinations[index]
-            cards_objects = [card for card in cards_objects] # tuple to list
-            cards = [str(card) for card in cards_objects]
+            # guaranteed to be highest combination of points and include required card if needed
+            card_subs_to_put_down = player.table_cards_strategy(player.cards_in_hand, self.all_melds, self.joint_runs, required_card)
+            if not card_subs_to_put_down:
+                return
         else:
-            cards_objects = []
+            # has all options but need to check required card
+            valid_options = player.all_valid_table_card_options(player.cards_in_hand, self.all_melds, self.joint_runs)
+            valid_option_keys = set(valid_options.keys())
+            card_subs_to_put_down = set()
             for i, bn in enumerate(button_list):
                 if bn["bd"] == 4:
                     card = player.cards_in_hand[i]
-                    cards_objects.append(card)
-            if not cards_objects:
+                    card_subs_to_put_down.add(card)
+            if not card_subs_to_put_down:
                 return
-            if required_card and required_card not in cards_objects:
+            if required_card and required_card not in card_subs_to_put_down:
                 return
-            cards = [str(card) for card in cards_objects]
-                    
-        def is_going_to_tabled_cards(subset_hand): 
-            if len(subset_hand) > 2:
-                return False
-            # check every combination of cards on the table
-            options = []
-            potential_points = []
-            
-            all_melds = deepcopy(self.get_all_melds())
-            for points in all_melds:
-                old_points = deepcopy(points)
-                points += subset_hand
-                if is_meld(points):
-                    options.append(old_points)
-                    potential_points.append(points)
-                        
-            # check if it can be added to existing joint runs            
-            all_joint_runs = deepcopy(self.get_all_joint_runs())
-            for run in all_joint_runs:
-                old_run = deepcopy(run)
-                run += subset_hand
-                if is_run(run):
-                    options.append(old_run)
-                    potential_points.append(run)
-                   
-            if options:
-                return (options, potential_points)
-            return False
-        
-        def is_valid(subset_hand, subset_hand_objects):
-            if len(set(subset_hand)) != len(subset_hand): # repeated card
-                return False
-            if is_meld(subset_hand_objects) or is_run(subset_hand_objects):
-                return True
-            valid_options = is_going_to_tabled_cards(subset_hand_objects)
-            if not valid_options:
-                return False
-            return valid_options
-
-        check = is_valid(cards, cards_objects)
-        if check:
-            if type(check) == tuple:
-                options = check[0]
-                potential_points = check[1]
-                path_options = [[card.small_image_path()[21:-13] for card in sublist] for sublist in options]
-                options_dict = OrderedDict()
-                count = 1
-                if type(player) == CPU:
-                    # strategy1
-                    choice = player.choose_cards_strategy1(potential_points)
-                    self.valid_table_cards(player, options, potential_points, cards_objects, choice)   
-                elif type(player) == Player:
-                    if len(options) > 1:
-                        for i in range(len(path_options)):
-                            for j, widget in enumerate(self.points_frame.winfo_children()):
-                                if widget["text"] in path_options[i]:
-                                    options_dict[count] = [self.points_frame, options[i]]
-                                    count += 1
-                                    break
-                            for widget in self.other_frame.winfo_children():
-                                if widget["text"] in path_options[i]:
-                                    options_dict[count] = [self.other_frame, options[i]]
-                                    count += 1
-                                    break
-                        self.show_options(options_dict, options, potential_points, cards_objects)
-                    else:
-                        choice = 1
-                        self.valid_table_cards(player, options, potential_points, cards_objects, choice)
-                        
+            for option in valid_option_keys:
+                if option == card_subs_to_put_down:
+                    card_subs_to_put_down = option
+                    break
             else:
-                choice = 1
-                self.valid_table_cards(player, None, None, cards_objects, choice)
+                return
+        # identify where the card is going
+        # add to all melds or all_runs          
+        if type(player) == CPU:
+            for option, identifier in card_subs_to_put_down.items():
+                if len(identifier) == 1:
+                    identifier = identifier[0]
+                else:
+                    identifier = identifier[1] # meld or run doesn't matter
+                self.update_table_cards(player, option, identifier)
+        else:
+            options_dict = OrderedDict()
+            count = 1
+            key = valid_options[card_subs_to_put_down]
+            num_options = len(key)
+            paths = [[card.small_image_path()[21:-13] for card in identifier] for identifier in key]
+            if num_options > 1:
+                for i in range(len(paths)):
+                    for j, widget in enumerate(self.points_frame.winfo_children()):
+                        if widget["text"] in paths[i]:
+                            options_dict[count] = [self.points_frame, key.get()[i]]
+                            count += 1
+                            break
+                    for widget in self.other_frame.winfo_children():
+                        if widget["text"] in paths[i]:
+                            options_dict[count] = [self.other_frame, key.get()[i]]
+                            count += 1
+                            break
+                self.show_options(options_dict)
+            else:
+                identifier = valid_options[card_subs_to_put_down][0]
+                self.update_table_cards(player, card_subs_to_put_down, identifier)                
+        return
                     
-    def valid_table_cards(self, player, options, potential_points, cards_objects, choice = 1):
-        if potential_points:
-            # if run then add to all runs
-            if is_run(potential_points[choice - 1]):
-                self.joint_runs.remove(options[choice - 1])
-                self.joint_runs.append(potential_points[choice - 1])
-            # if meld then add to all melds
-            elif is_meld(potential_points[choice - 1]):
-                self.all_melds.remove(options[choice - 1])
-                self.all_melds.append(potential_points[choice - 1])
+    def update_table_cards(self, player, subset_hand, identifier):
+        # update all melds and runs
+        if not identifier:
+            if is_meld(subset_hand):
+                self.all_melds.append(subset_hand)
+            elif is_run(subset_hand):
+                self.joint_runs.append(subset_hand)
+            else:
+                raise ValueError("Subset hand given was not a valid meld or run from hand")
+        elif identifier in self.all_melds:
+            self.all_melds.remove(identifier)
+            self.all_melds.append(subset_hand)
+        elif identifier in self.joint_runs:
+            self.joint_runs.remove(identifier)
+            self.joint_runs.append(subset_hand)
+        else:
+            raise ValueError("Subset hand given was not part of all melds or joint runs")
         # place cards into player's cards on table
-        point_list = [card for card in cards_objects]
+        point_list = [card for card in subset_hand]
         # sort the cards before putting on table and remove from player's hand
         point_list = sorted(point_list)
         player.cards_on_table.append(point_list)
-        cards_to_keep = [card for card in player.cards_in_hand if card not in cards_objects]
+        cards_to_keep = [card for card in player.cards_in_hand if card not in subset_hand]
         player.cards_in_hand = cards_to_keep
-        player.sort_by(player.cards_in_hand, player.method)
+        player.cards_in_hand = sort_by(player.cards_in_hand, player.method)
         # Update all cards on table
         self.set_all_tabled_cards()
         # update cards in hand graphics
@@ -448,35 +367,8 @@ class Rummy(object):
             # update cards on table graphics
             clear_frame(self.points_frame)
             self.show_player_cards_on_table(player)
-        # check for winner
-        if self.check_winner(player):
-            return True
-        self.required_card = None
-        return False
-     
-    def get_points(self, player, must_put_down_points, required_card):
-        index = 0
-        ask = True # cpu strategy1   
-        if ask: 
-            multiple = True
-            while multiple:
-                # table cards
-                cards_tabled = self.table_cards(player, required_card, index)
-                if cards_tabled and player.round_winner():
-                    multiple = False
-                    return True
-                if not cards_tabled and not must_put_down_points: # cards chosen incorrectly
-                    index += 1
-                    ask = True # strategy1
-                elif not cards_tabled and must_put_down_points: # cards chosen incorrectly but must point down points
-                    index += 1
-                elif cards_tabled == "no":
-                    multiple = False
-                else:
-                    required_card = None
-                    index += 1
-        return False
-
+        return
+    
     # Validate option chosen
     def return_option(self, options, potential_points, cards_objects, option_number):
         for bn in option_buttons:
@@ -484,7 +376,7 @@ class Rummy(object):
         self.valid_table_cards(self.players[0], options, potential_points, cards_objects, option_number)
     
     # Show options for tabling cards    
-    def show_options(self, options_dict, options, potential_points, cards_objects):
+    def show_options(self, options_dict, cards_objects):
         global option_buttons
         option_buttons = []
         option_number = 1
@@ -630,17 +522,16 @@ class Rummy(object):
         
         # pick up card
         pickup = self.pickup(player)
-        valid_pickup = pickup[0]
-        must_put_down_points = pickup[1]
+        valid_pickup, must_put_down_points = pickup[0], pickup[1]
         required_card = None
-        if len(pickup) == 3:
+        if must_put_down_points:
             required_card = pickup[2]
         while not valid_pickup:
             valid_pickup = self.pickup(player)
             
         # get points
-        is_winner = self.get_points(player, must_put_down_points, required_card)
-        if is_winner and self.check_winner(player):
+        self.table_cards(player, must_put_down_points, required_card)
+        if player.round_winner() and self.check_winner(player):
             return
             
         # discard

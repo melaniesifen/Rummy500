@@ -26,6 +26,8 @@ class Card(object):
     
     # equality tests
     def __eq__(self, other):
+        if type(other) == str:
+            raise TypeError(f"string type of {other} cannot be compared to card type")
         return self.rank == other.rank and self.suit == other.suit
 
     def __ne__(self, other):
