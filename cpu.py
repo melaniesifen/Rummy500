@@ -1,11 +1,10 @@
-import itertools
 import random
 from collections import Counter, defaultdict
 from copy import deepcopy
 from unittest.case import addModuleCleanup
 from player import Player
+from card import Card
 from CommonFunctions import calculate_points, is_meld, is_run, powerset 
-from DefaultOrderedDict import DefaultOrderedDict
 
 class CPU(Player):
     def __init__(self, cards_in_hand = [], cards_on_table = [], method = "suit", points = 0):
@@ -180,87 +179,24 @@ class CPU(Player):
         return None if not best else random.choice(best)
     
     # discard worst card based on number of similar cards
-    # If tie then based on points
-    # remove Aces if not good at the time
-    def discard_strategy1(self, tabled_cards):
-        tabled_cards = deepcopy(tabled_cards)
-        suits = [card.suit for card in tabled_cards if card.rank < 10]
-        if not suits:
-            suits = [card.suit for card in tabled_cards if 10 <= card.rank < 14]
-        if not suits:
-            suits = [card.suit for card in tabled_cards if card.rank == 14]
-        ranks = [card.rank for card in tabled_cards if card.rank < 10]
-        if not ranks:
-            ranks = [card.rank for card in tabled_cards if 10 <= card.rank < 14]
-        if not ranks:
-            ranks = [card.rank for card in tabled_cards if card.rank == 14]
-        count_suits = Counter(suits)
-        least_common_suit = count_suits.most_common()[-1]
-        count_ranks = Counter(ranks)
-        least_common_rank = count_ranks.most_common()[-1]
-        while count_suits and count_ranks:
-            for card in tabled_cards:
-                if card.rank == least_common_rank and card.suit == least_common_suit:
-                    return card
-        
-    # def discard_strategy1_1(self, table_cards):
-    #     # check in hand - there should be no point subsets
-    #     worst_ranks = []
-    #     ranks = [card.rank for card in self.cards_in_hand]
-    #     count_dict = {rank:ranks.count(rank) for rank in ranks}
-    #     min_rank_count = [rank for rank, count in count_dict.items() if count == 1]
-    #     min_rank_count.sort()
-    #     for rank in min_rank_count:
-    #         if rank < 10:
-    #             worst_ranks += [card for card in self.cards_in_hand if card.rank == rank]
-    #         elif 10 <= rank < 14 and not worst_ranks:
-    #             worst_ranks += [card for card in self.cards_in_hand if card.rank == rank]
-    #         elif rank == 14 and not worst_ranks:
-    #             worst_ranks += [card for card in self.cards_in_hand if card.rank == rank]
-                     
-    #     worst_suits = []     
-    #     suits = [card.suit for card in self.cards_in_hand]
-    #     count_dict = {suit:suits.count(suit) for suit in suits}
-    #     min_suit_count = [suit for suit, count in count_dict.items() if count == 1]
-    #     for suit in min_suit_count:
-    #         worst_suits += [card for card in self.cards_in_hand if card.suit == suit and card.rank < 10]
-    #         if not worst_suits:
-    #             worst_suits += [card for card in self.cards_in_hand if card.suit == suit and 10 <= card.rank < 14]
-    #         if not worst_suits:
-    #             worst_suits += [card for card in self.cards_in_hand if card.suit == suit and card.rank == 14]
-                    
-    #     if len(worst_card) > 0:
-    #         low = 10
-    #         worst_card_rank_suit = [card for card in worst_card if card.rank < low]
-    #         if len(worst_card_rank_suit) > 0:
-    #             return random.choice(worst_card_rank_suit)
-    #         else:
-    #             low = 14
-    #             worst_card_rank_suit = [card for card in worst_card if card.rank < low]
-    #             if len(worst_card_rank_suit) > 0:
-    #                 return random.choice(worst_card_rank_suit)
-    #             else:
-    #                 return worst_card[0]
-                    
-    #     # TODO: CHECK FOR ALMOST MELDS
-    #     return random.choice(self.cards_in_hand)
-                
-                    
-                
-                
-            
-        
-            
-            
-        
-    
-        
-        
-        
-            
-            
-            
-            
-        
-        
-        
+    def discard_strategy_greedy(self, cards_on_table, all_melds, all_runs):
+        all_cards = cards_on_table + self.cards_in_hand
+        for meld in all_melds:
+            for card in meld:
+                all_cards.append(card)
+        for run in all_runs:
+            for card in run:
+                all_cards.append(card)
+        all_cards = sorted(all_cards, reverse=True)
+        all_suits = [card.suit for card in all_cards]
+        all_ranks = [card.rank for card in all_cards]
+        least_common_suits = [suit for suit, count in Counter(all_suits).most_common()[::-1]]
+        least_common_ranks = [rank for rank, count in Counter(all_ranks).most_common()[::-1]]
+        to_discard = []
+        for rank in least_common_ranks:
+            for suit in least_common_suits:
+                to_discard.append(Card(rank, suit))
+        for card in to_discard:
+            if card in self.cards_in_hand:
+                return card
+        raise ValueError("No card was discarded!")

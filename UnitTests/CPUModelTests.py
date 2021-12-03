@@ -208,6 +208,37 @@ class TestCPUModel(TestCase):
     # discard tests --------------------------------
     # ----------------------------------------------
     
+    def test_discard_greedy1(self):
+        cards_on_table = [Card(10, "H")]
+        all_melds = [[Card(2, "H"), Card(2, "C"), Card(2, "D")],
+            [Card(5, "H"), Card(5, "C"), Card(5, "D")]]
+        all_runs = [[Card(8, "C"), Card(9, "C"), Card(10, "C")]]
+        cards_in_hand = [Card(2, "S"), Card(5, "S"), Card(12, "C"), Card(3, "D")]
+        expected_discard = Card(3, "D")
+        cpu = CPU(cards_in_hand=cards_in_hand)
+        discard = cpu.discard_strategy_greedy(cards_on_table, all_melds, all_runs)
+        self.assertEqual(discard, expected_discard)
+    
+    def test_discard_greedy2(self):
+        cards_on_table = [Card(10, "H"), Card(3, "S")]
+        all_melds = [[Card(2, "H"), Card(2, "C"), Card(2, "D")],
+            [Card(5, "H"), Card(5, "C"), Card(5, "D")]]
+        all_runs = [[Card(8, "C"), Card(9, "C"), Card(10, "C")]]
+        cards_in_hand = [Card(2, "S"), Card(5, "S"), Card(12, "C"), Card(3, "D")]
+        expected_discard = Card(12, "C")
+        cpu = CPU(cards_in_hand=cards_in_hand)
+        discard = cpu.discard_strategy_greedy(cards_on_table, all_melds, all_runs)
+        self.assertEqual(discard, expected_discard)
+        
+    def test_discard_greedy3(self):
+        cards_on_table = []
+        all_melds = []
+        all_runs = []
+        cards_in_hand = [Card(2, "S"), Card(5, "C"), Card(12, "H"), Card(14, "D")]
+        expected_discard = Card(2, "S")
+        cpu = CPU(cards_in_hand=cards_in_hand)
+        discard = cpu.discard_strategy_greedy(cards_on_table, all_melds, all_runs)
+        self.assertEqual(discard, expected_discard)
         
 if __name__ == "__main__":
     main()
