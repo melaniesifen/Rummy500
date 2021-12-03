@@ -1,3 +1,4 @@
+from collections import defaultdict
 from unittest import main, TestCase
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,7 +15,7 @@ class TestCPUModel(TestCase):
     # should always maximize points and minimize excess where possible
     def test_determine_best_pickup_meld1(self):
         cards_on_table = [Card(2, "D"), Card(13, "S"), Card(11, "H"), Card(2, "H"), Card(2, "C")]
-        cards_in_hand = [Card(2, "S")]
+        # cards_in_hand = [Card(2, "S")]
         hand = [(Card(2, "D"), Card(2, "H"), Card(2, "S")), (Card(2, "D"), Card(2, "C"), Card(2, "S")), \
             (Card(2, "H"), Card(2, "C"), Card(2, "S")), (Card(2, "D"), Card(2, "H"), Card(2, "S"), Card(2, "C"))]
         best_pickup = CPU().determine_best_pickup_greedy(hand, cards_on_table)
@@ -24,7 +25,7 @@ class TestCPUModel(TestCase):
     # should always maximize points and minimize excess where possible
     def test_determine_best_pickup_meld2(self):
         cards_on_table = [Card(2, "D"), Card(13, "S"), Card(11, "H"), Card(2, "C")]
-        cards_in_hand = [Card(2, "S")]
+        # cards_in_hand = [Card(2, "S")]
         hand = [(Card(2, "D"), Card(2, "C"), Card(2, "S"))]
         best_pickup = CPU().determine_best_pickup_greedy(hand, cards_on_table)
         # should pick up all to make meld
@@ -114,7 +115,7 @@ class TestCPUModel(TestCase):
         all_melds, all_runs = [], []
         tabled_cards = [Card(10, "C"), Card(11, "C"), Card(12, "C")]
         cards_in_hand = [Card(2, "D")]
-        cpu = CPU(cards_in_hand=cards_in_hand)
+        cpu = CPU(cards_in_hand = cards_in_hand)
         result = cpu.pickup_options(tabled_cards, all_melds, all_runs)
         self.assertEqual(result, Card(10, "C"))
     
@@ -133,15 +134,81 @@ class TestCPUModel(TestCase):
             [[Card(10, "D"), Card(10, "H"), Card(10, "C")], [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
             ]
         self.assertTrue(result_options in expected_outcome)
+
+    def test_should_choose_best_possible_cards(self):
+        options = [[Card(10, "C"), Card(11, "C"), Card(12, "C")], \
+            [Card(10, "D"), Card(10, "H"), Card(10, "C")], \
+            [Card(2, "C"), Card(2, "D"), Card(2, "H")], \
+            [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
+        hand = [Card(10, "C"), Card(11, "C"), Card(12, "C"),
+                Card(10, "D"), Card(10, "H"),
+                Card(2, "C"), Card(2, "D"), Card(2, "H"),
+                Card(3, "C"), Card(4, "C")]
+        result_options = CPU().choose_cards_strategy_greedy(options, hand)
+        expected_outcome = [
+            [[Card(10, "C"), Card(11, "C"), Card(12, "C")], [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]],
+            [[Card(10, "D"), Card(10, "H"), Card(10, "C")], [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
+            ]
+        self.assertTrue(result_options in expected_outcome)
+    
+    def test_should_choose_best_possible_cards_with_required_card(self):
+        options = [[Card(10, "C"), Card(11, "C"), Card(12, "C")], \
+            [Card(10, "D"), Card(10, "H"), Card(10, "C")], \
+            [Card(2, "C"), Card(2, "D"), Card(2, "H")], \
+            [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
+        hand = [Card(10, "C"), Card(11, "C"), Card(12, "C"),
+                Card(10, "D"), Card(10, "H"),
+                Card(2, "C"), Card(2, "D"), Card(2, "H"),
+                Card(3, "C"), Card(4, "C")]
+        required_card = Card(10, "H")
+        result_options = CPU().choose_cards_strategy_greedy(options, hand, required_card)
+        expected_outcome = [[Card(10, "D"), Card(10, "H"), Card(10, "C")], [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
+        self.assertTrue(result_options == expected_outcome)
         
     def test_choose_best_options_should_return_null_if_no_options(self):
         options = []
-        result_options = CPU().choose_cards_strategy_greedy(options)
+        hand = [Card(2, "C")]
+        result_options = CPU().choose_cards_strategy_greedy(options, hand)
         self.assertIsNone(result_options)
         
+    def test_table_cards_strategy_should_give_all_valid_options(self):
+        cards_in_hand = [Card(10, "C"), Card(2, "S"), Card(2, "H"), Card(2, "D")]
+        all_melds = [[Card(10, "S"), Card(10, "H"), Card(10, "D")]]
+        all_runs = [[Card(11, "C"), Card(12, "C"), Card(13, "C")]]
+        cpu = CPU(cards_in_hand = cards_in_hand)
+        options_dict = cpu.table_cards_strategy(cards_in_hand, all_melds, all_runs)
+        expected_outcome = [
+            {(Card(10, "S"), Card(10, "H"), Card(10, "D"), Card(10, "C")) : [[Card(10, "S"), Card(10, "H"), Card(10, "D")]],
+             (Card(2, "S"), Card(2, "H"), Card(2, "D")) : [None]},
+            {(Card(10, "C"), Card(11, "C"), Card(12, "C"), Card(13, "C")) : [[Card(11, "C"), Card(12, "C"), Card(13, "C")]],
+             (Card(2, "S"), Card(2, "H"), Card(2, "D")) : [None]}
+        ]
+        options = defaultdict(list)
+        for k, v in options_dict.items():
+            k = sorted(list(k))
+            options[tuple(k)] = v
+        self.assertTrue(options in expected_outcome)
+        
+    def test_table_cards_strategy_should_give_all_valid_options_with_required_card(self):
+        cards_in_hand = [Card(9, "C"), Card(10, "C"), Card(2, "S"), Card(2, "H"), Card(2, "D")]
+        all_melds = [[Card(10, "S"), Card(10, "H"), Card(10, "D")]]
+        all_runs = [[Card(11, "C"), Card(12, "C"), Card(13, "C")]]
+        required_card = Card(9, "C")
+        cpu = CPU(cards_in_hand = cards_in_hand)
+        options_dict = cpu.table_cards_strategy(cards_in_hand, all_melds, all_runs, required_card = required_card)
+        expected_outcome = {(Card(9, "C"), Card(10, "C"), Card(11, "C"), Card(12, "C"), Card(13, "C")) : [[Card(11, "C"), Card(12, "C"), Card(13, "C")]],
+             (Card(2, "S"), Card(2, "H"), Card(2, "D")) : [None]}
+        options = defaultdict(list)
+        for k, v in options_dict.items():
+            k = sorted(list(k))
+            options[tuple(k)] = v
+        self.assertTrue(options == expected_outcome)
+        
+    # ----------------------------------------------
+    # discard tests --------------------------------
+    # ----------------------------------------------
     
         
-    
 if __name__ == "__main__":
     main()
 

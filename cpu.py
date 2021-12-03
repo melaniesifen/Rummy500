@@ -2,6 +2,7 @@ import itertools
 import random
 from collections import Counter, defaultdict
 from copy import deepcopy
+from unittest.case import addModuleCleanup
 from player import Player
 from CommonFunctions import calculate_points, is_meld, is_run, powerset 
 from DefaultOrderedDict import DefaultOrderedDict
@@ -115,26 +116,26 @@ class CPU(Player):
                     temp_meld = deepcopy(meld)
                     temp_meld.append(card)
                     if is_meld(temp_meld):
-                        options[temp_meld].append(meld)
+                        options[tuple(temp_meld)].append(meld)
         # points for all runs
         all_runs = deepcopy(all_runs)
         for run in all_runs:
             temp_run = run + hand
             all_possible_runs = powerset(temp_run)
             for subset_hand in all_possible_runs:
-                if is_run(subset_hand):
-                    options[subset_hand].append(run)  
+                if is_run(subset_hand) and any(card in hand for card in temp_run):
+                    options[subset_hand].append(run)
         if not options:
             return
-        options_keys = options.keys()
+        options_keys = list(options.keys())
         strategy = self.points_map[stratgey]
         # list of all point sets of cards to put down
-        valid_options = strategy(options_keys, required_card)
+        valid_options = strategy(options_keys, hand, required_card)
         options = {k:v for k, v in options.items() if k in valid_options}
         return options
     
     # chose highest. If tie choose randomly.
-    def choose_cards_strategy_greedy(self, options, required_card = None):
+    def choose_cards_strategy_greedy(self, options, hand, required_card = None):
         # get powerset of indeces
         idx_list = [i for i in range(len(options))]
         idx_tups = powerset(idx_list)
@@ -143,15 +144,27 @@ class CPU(Player):
         for tup in idx_tups:
             option = [options[idx] for idx in tup]
             all_options.append(option)
+        s = [str(card) for card in hand]
         # remove all impossible options (using same card multiple times) or doesn't contain required card
         options_after_removing_duplicates_or_no_required_card = []
         for option in all_options:
+            s = [[str(card) for card in sub] for sub in option]
             flat = [num for comb in option for num in comb]
             if required_card and required_card not in flat:
                 continue
             if len(set(flat)) == len(flat):
                 options_after_removing_duplicates_or_no_required_card.append(option)
+        # remove points involving cards not in hand
         options = options_after_removing_duplicates_or_no_required_card
+        options_after_removing_joint_runs = []
+        for option in options:
+            sub_is_valid = True
+            for sub in option:
+                if not any(card in hand for card in sub):
+                    sub_is_valid = False
+            if sub_is_valid:
+                options_after_removing_joint_runs.append(option)
+        options = options_after_removing_joint_runs
         # maximize points
         best = []
         high = 0
@@ -189,7 +202,6 @@ class CPU(Player):
             for card in tabled_cards:
                 if card.rank == least_common_rank and card.suit == least_common_suit:
                     return card
-            
         
     # def discard_strategy1_1(self, table_cards):
     #     # check in hand - there should be no point subsets
