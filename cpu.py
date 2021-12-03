@@ -123,8 +123,7 @@ class CPU(Player):
             all_possible_runs = powerset(temp_run)
             for subset_hand in all_possible_runs:
                 if is_run(subset_hand):
-                    options[subset_hand].append(run)
-                    
+                    options[subset_hand].append(run)  
         if not options:
             return
         options_keys = options.keys()
@@ -135,18 +134,18 @@ class CPU(Player):
         return options
     
     # chose highest. If tie choose randomly.
-    def choose_cards_strategy_greedy(self, options_in_order, required_card = None):
+    def choose_cards_strategy_greedy(self, options, required_card = None):
         # get powerset of indeces
-        idx_list = [i for i in range(len(options_in_order))]
+        idx_list = [i for i in range(len(options))]
         idx_tups = powerset(idx_list)
         # get all options (but not necesarily the best or even possible ones)
-        options = []
+        all_options = []
         for tup in idx_tups:
-            option = [options_in_order[idx] for idx in tup]
-            options.append(option)
+            option = [options[idx] for idx in tup]
+            all_options.append(option)
         # remove all impossible options (using same card multiple times) or doesn't contain required card
         options_after_removing_duplicates_or_no_required_card = []
-        for option in options:
+        for option in all_options:
             flat = [num for comb in option for num in comb]
             if required_card and required_card not in flat:
                 continue
@@ -159,12 +158,12 @@ class CPU(Player):
         for option in options:
             points = 0
             for subset_hand in option:
-                points + calculate_points(subset_hand)
+                points += calculate_points(subset_hand)
             if points > high:
                 high = points
                 best = [option]
             elif points == high:
-                best.append(option)
+                best.append(option)         
         return None if not best else random.choice(best)
     
     # discard worst card based on number of similar cards

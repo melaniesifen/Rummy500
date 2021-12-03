@@ -118,6 +118,30 @@ class TestCPUModel(TestCase):
         result = cpu.pickup_options(tabled_cards, all_melds, all_runs)
         self.assertEqual(result, Card(10, "C"))
     
+    # ----------------------------------------------
+    # table cards tests ----------------------------
+    # ----------------------------------------------
+    
+    def test_should_choose_best_possible_cards(self):
+        options = [[Card(10, "C"), Card(11, "C"), Card(12, "C")], \
+            [Card(10, "D"), Card(10, "H"), Card(10, "C")], \
+            [Card(2, "C"), Card(2, "D"), Card(2, "H")], \
+            [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
+        result_options = CPU().choose_cards_strategy_greedy(options)
+        expected_outcome = [
+            [[Card(10, "C"), Card(11, "C"), Card(12, "C")], [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]],
+            [[Card(10, "D"), Card(10, "H"), Card(10, "C")], [Card(2, "C"), Card(3, "C"), Card(4, "C")], [Card(2, "D")]]
+            ]
+        self.assertTrue(result_options in expected_outcome)
+        
+    def test_choose_best_options_should_return_null_if_no_options(self):
+        options = []
+        result_options = CPU().choose_cards_strategy_greedy(options)
+        self.assertIsNone(result_options)
+        
+    
+        
+    
 if __name__ == "__main__":
     main()
 
