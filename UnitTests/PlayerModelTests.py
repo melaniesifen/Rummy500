@@ -79,7 +79,7 @@ class TestPlayerModel(TestCase):
         player.pick(Card(2, "S"))
         player.pick(Card(4, "C"))
         player.pick(Card(5, "S"))
-        player.sort_by(player.cards_in_hand, player.method)
+        player.sort_by()
         self.assertEqual([Card(4, "C"), Card(2, "S"), Card(5, "S")], player.cards_in_hand)
         
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ def powerset(items_list, size = 1):
 # takes hand of cards object and return sorted with preferred method
 def sort_by(hand, method):
     if method == "suit":
-        return sorted(hand, key=attrgetter('suit', 'rank'))
+        return sorted(hand, key=lambda x: (x.suit, x.rank))
     return sorted(hand)
     
 # bool: cards list is a run            
@@ -31,11 +31,17 @@ def is_run(subset_hand):
         return False
     # rank is in order
     rank_sorted_subset_hand = sort_by(subset_hand, "rank")
-    next_rank = rank_sorted_subset_hand[0].rank
-    for i in range(1, len(subset_hand)):
-        if rank_sorted_subset_hand[i].rank != next_rank + 1: 
+    for i in range(len(rank_sorted_subset_hand) - 1):
+        if rank_sorted_subset_hand[i].rank == 14:
             return False
-        next_rank += 1
+        if (rank_sorted_subset_hand[i].rank + 1 == rank_sorted_subset_hand[i + 1].rank) or (rank_sorted_subset_hand[i + 1].rank == 14):
+            if rank_sorted_subset_hand[i].rank == rank_sorted_subset_hand[i + 1].rank - 1:
+                continue
+            if rank_sorted_subset_hand[0].rank == 2:
+                continue
+            return False
+        else:
+            return False
     return True
 
 def is_meld(subset_hand):

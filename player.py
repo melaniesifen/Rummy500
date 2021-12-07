@@ -1,7 +1,8 @@
 from collections import defaultdict
 from copy import deepcopy
 from card import Card
-from CommonFunctions import sort_by, calculate_points, powerset, is_meld, is_run
+from CommonFunctions import calculate_points, powerset, is_meld, is_run, sort_by
+from CommonFunctions import sort_by as sort_by_module
 
 class Player(object):
     
@@ -66,6 +67,9 @@ class Player(object):
     def __str__(self):
         cards_in_hand = ' '.join(str(card) for card in self.cards_in_hand)
         return "Cards in hand: " + cards_in_hand
+        
+    def sort_by(self):
+        self.cards_in_hand = sort_by_module(self.cards_in_hand, self.method)
         
     # put down all points immediately with highest values
     def all_valid_table_card_options(self, hand, all_melds, all_runs):

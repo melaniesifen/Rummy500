@@ -63,7 +63,7 @@ class Rummy(object):
         self.deck_label = Label(self.other_frame, image=self.deck_image, highlightthickness = 0, bd = 0)
         self.deck_label.place(relx=0.1, rely=0.85, anchor=CENTER)
         
-        self.select_button = Button(self.player_frame, text="select", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.table_cards(player = self.players[0], required_card=self.required_card, index=None))
+        self.select_button = Button(self.player_frame, text="select", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.table_cards(player = self.players[0], required_card=self.required_card))
         self.discard_button = Button(self.player_frame, text="discard", highlightbackground = "red4", bg="red2", font=("Courier", 12), state="disabled", bd=4, command=lambda:self.discard(player = self.players[0], required_card=self.required_card))
         
         self.back_card = PhotoImage(file="images/card_back.png")
@@ -81,7 +81,7 @@ class Rummy(object):
             for player in self.players:
                 player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
-            player.sort_by(player.cards_in_hand, player.method)
+            player.sort_by()
         # # test scenario
         # for player in self.players:
         #     if type(player) == Player:
@@ -212,7 +212,7 @@ class Rummy(object):
             return
         # put card in player's hand
         player.pick(new_card)
-        player.sort_by(player.cards_in_hand, player.method)
+        player.sort_by()
         if type(player) == Player:
             set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
         is_valid_pick, must_put_down_points = True, False
@@ -247,7 +247,7 @@ class Rummy(object):
         is_valid_pick, must_put_down_points = self.check_valid_pickup_for_player(new_cards)
         if is_valid_pick:
             player.cards_in_hand = potential_hand
-            player.sort_by(player.cards_in_hand, player.method)
+            player.sort_by()
             set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player)
             if must_put_down_points:
                 self.required_card = first_card
@@ -489,7 +489,7 @@ class Rummy(object):
                     label.place(relx=x, rely=0.85, anchor=CENTER)
                 # remove card from player's hand
                 player.discard(card)
-                player.sort_by(player.cards_in_hand, player.method)
+                player.sort_by()
                 # show player's hand
                 set_sorting_method(bn = [self.sort_method, self.select_button, self.discard_button], frame=self.player_frame, clicked=False, player=player, button_label_both="label")
                 # show cards on table
@@ -510,7 +510,7 @@ class Rummy(object):
             self.table.place_card_on_table(card)
             card = str_to_card(card)
             player.discard(card)
-            player.sort_by(player.cards_in_hand, player.method)
+            player.sort_by()
             
     ##############################################
     # simulate the play of rummy
@@ -751,11 +751,11 @@ def set_sorting_method(bn, frame, clicked, player = None, button_label_both = "b
         if sort_method["text"] == "suit":
             sort_method.configure(text="rank")
             player.set_method("rank")
-            player.sort_by(player.cards_in_hand, player.method)
+            player.sort_by()
         else:
             sort_method.configure(text="suit")
             player.set_method("suit")
-            player.sort_by(player.cards_in_hand, player.method)
+            player.sort_by()
     keep_gc_on = False   
     paths = player.get_cards_in_hand() # list of image paths
     clear_frame(frame, keep = bn)
