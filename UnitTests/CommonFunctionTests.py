@@ -1,11 +1,10 @@
-from collections import defaultdict
 from unittest import main, TestCase
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from CommonFunctions import *
 from card import Card
 
-class TestCPUModel(TestCase):
+class TestCommonFunctions(TestCase):
     
     # ----------------------------------------------
     # melds and run tests --------------------------
