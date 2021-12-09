@@ -41,6 +41,5 @@ class TestTableModel(TestCase):
         self.assertIsNone(card)
      
     
-        
 if __name__ == "__main__":
     main()

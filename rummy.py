@@ -82,23 +82,7 @@ class Rummy(object):
                 player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
             player.sort_by()
-        # # test scenario
-        # for player in self.players:
-        #     if type(player) == Player:
-        #         cards = [Card(7, 'S'), Card(7, 'D'), Card(7, 'C'), Card(7, 'H')]
-        #         player.cards_in_hand = cards
-        #     else:
-        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S'), Card(11, 'S')]
-        #         player.cards_in_hand = cards  
-        # # # test scenario 2
-        # for player in self.players:
-        #     if type(player) == Player:
-        #         cards = [Card(12, 'S'), Card(12, 'D'), Card(12, 'C'), Card(12, 'H'), Card(14, 'S'), Card(14, 'D'), Card(14, 'C'), Card(14, 'H')]
-        #         player.cards_in_hand = cards
-        #     else:
-        #         cards = [Card(3, 'D'), Card(4, 'H'), Card(6, 'S'), Card(5, 'S'), Card(4, 'S'), Card(8, 'S'), Card(9, 'S'), Card(10, 'S')]
-        #         player.cards_in_hand = cards
-        
+                
         self.sort_method.configure(state = "normal")       
         self.back_card_labels = []     
         # sort the hands of each player and print
