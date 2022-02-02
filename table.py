@@ -26,7 +26,7 @@ class Table(object):
         return to_pickup
                 
     def pickup_card_from_pile(self):
-        return None if not self.cards_in_pile else self.cards_in_pile.pop(0)            
+        return None if not self.cards_in_pile else self.cards_in_pile.pop()            
             
     def __str__(self):
         cards_on_table = ' '.join(str(card) for card in self.cards_on_table)

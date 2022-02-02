@@ -35,15 +35,16 @@ class CPU(Player):
         for meld in all_melds:
             if len(meld) == 3:
                 for card in tabled_cards:
-                    temp_meld = deepcopy(meld)
+                    temp_meld = list(deepcopy(meld))
                     temp_meld.append(card)
                     if is_meld(temp_meld):
-                        point_hands.append(temp_meld)
+                        point_hands.append(tuple(temp_meld))
         # try to make a run with potential hand and cards on table
         all_runs = deepcopy(all_runs)
         for run in all_runs:
-            run += potential_hand
-            all_possible_runs = powerset(run)
+            temp_run = list(run)
+            temp_run += potential_hand
+            all_possible_runs = powerset(temp_run)
             for subset_hand in all_possible_runs:
                 if any(card in subset_hand for card in tabled_cards):
                     if is_run(subset_hand):

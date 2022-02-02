@@ -489,7 +489,7 @@ class Rummy(object):
             # cpu's turn
             self.cpu_play()
         else:
-            card = player.discard_strategy1(self.table.cards_on_table)
+            card = player.discard_strategy_greedy(self.table.cards_on_table, self.all_melds, self.joint_runs)
             # add card to table
             self.table.place_card_on_table(card)
             card = str_to_card(card)
@@ -795,9 +795,10 @@ def config_border_and_pickup(i, self):
     else:
         return
 
-def main():
+def global_frame_creation():
     global gui
-    gui = Tk(className='Rummy - Window Size')# set window size and color
+    # set window size and color
+    gui = Tk(className='Rummy - Window Size')
     gui.bind('<Escape>', lambda event: gui.state('normal'))
     gui.bind('<F11>', lambda event: gui.state('zoomed'))
     gui.configure(bg='SpringGreen3')
@@ -816,6 +817,6 @@ def main():
     gui.mainloop() 
     
 if __name__ == "__main__":
-   main()         
+   global_frame_creation()         
 
 

@@ -13,7 +13,8 @@ class TestDeckModel(TestCase):
     def test_deal_should_return_card_object(self):
         deck = Deck()
         card = deck.deal()
-        self.assertEqual(card, Card(2, "C"))
+        print(str(card))
+        self.assertEqual(card, Card(14, "S"))
         
     def test_empty_deck_should_return_none(self):
         deck = Deck()

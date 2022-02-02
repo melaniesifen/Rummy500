@@ -5,7 +5,7 @@ import gc
 from rummy import Rummy
 from math import floor
 from copy import deepcopy
-from CommonFunctions import _sort_by, is_run, is_meld, str_to_card
+from CommonFunctions import *
 from card import Card
 from deck import Deck
 from cpu import CPU
@@ -34,7 +34,7 @@ class CPURummy(Rummy):
             for player in self.players:
                 player.cards_in_hand.append(self.deck.deal())
         for player in self.players:
-            player.sort_by(player.cards_in_hand, player.method)
+            player.sort_by()
             
         # show first card of the deck and allow for selection
         self.table = Table(self.deck)
@@ -78,10 +78,7 @@ class CPURummy(Rummy):
             valid_pickup = self.pickup(player)
             
         # get points
-        is_winner = self.get_points(player, must_put_down_points, required_card)
-        if is_winner:
-            if self.check_winner(player):
-                return True
+        self.table_cards(player, required_card)
         if self.check_winner(player):
             return True
             
